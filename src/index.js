@@ -1,6 +1,7 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { BrowserRouter } from "react-router-dom";
 import './index.css';
+import ReactDOM from "react-dom";
 import App from './App';
 import { QueryClient, QueryClientProvider } from 'react-query';
  
@@ -28,10 +29,11 @@ const queryClient = new QueryClient({
  
 const rootNode = document.getElementById('root');
 ReactDOM.render(
-  <QueryClientProvider  client={queryClient}>
+  <BrowserRouter>
+    <QueryClientProvider  client={queryClient}>
     <App />
   </QueryClientProvider>
-
+  </BrowserRouter>
   , rootNode);
 
  
