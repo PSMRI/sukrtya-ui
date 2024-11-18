@@ -1,14 +1,20 @@
-import React, { useState } from "react";
-import FaciltyList from "../Data/1.GetFaciltyList.json";
-import FormTranslList from "../Data/2.GetFormTranslList.json";
-import { Navigate } from "react-router";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+
+import { useLocation, useNavigate } from "react-router";
+
 import Base from "../Components/Base";
+import axios from "axios";
+
 export default function Dashboard() {
-  const userName =
-    FormTranslList.objform[0]?.User ||
-    FormTranslList.objPrivateUsers[0]?.profileName;
-  const profileEmail = FormTranslList.objPrivateUsers[0]?.profileEmail;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { userId, regLid, mappingUserId } = location.state;
+
+  const [formData, setFormData] = useState({
+    facilityType: "",
+    facilityId: "",
+    rgLId: "",
+  });
 
   const date = new Date();
   const formattedDate = date
@@ -19,13 +25,28 @@ export default function Dashboard() {
     })
     .replace(/ /g, " ");
 
+  const [data, setData] = useState([]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          `http://115.245.54.211:9090/api/GetFacilityList?UserId=${userId}&RegLid=${regLid}&MappingUserId=${mappingUserId}`
+        );
+        setData(response.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
 
+    fetchData();
+  }, [userId, regLid, mappingUserId]);
 
-    
+  const handleSubmit = (item) => {
+    const serializedObject = JSON.stringify(item);
+    navigate("/facility-trans", { state: { object: serializedObject } });
+  };
   return (
     <>
-      
-        
       <Base title="Dashboard">
         <div className="container-fluid page-body-wrapper">
           <div className="main-panel">
@@ -34,22 +55,29 @@ export default function Dashboard() {
                 <div className="col-md-12 grid-margin">
                   <div className="row">
                     <div className="col-12 col-xl-8 mb-4 mb-xl-0">
-                      <h3 className="font-weight-bold text-capitalize">Welcome {userName}</h3>
+                      <h3 className="font-weight-bold text-capitalize">
+                        Welcome,{" "}
+                        <span className="text-success">
+                          {localStorage.getItem("profileName")}
+                        </span>
+                      </h3>
 
                       <h6 className="font-weight-normal mb-0">
-                        <span className="text-primary">{profileEmail}</span>
+                        <span className="text-primary">
+                          {localStorage.getItem("username")}
+                        </span>
                       </h6>
                     </div>
                     <div className="col-12 col-xl-4">
                       <div className="justify-content-end d-flex">
                         <div className="dropdown flex-md-grow-1 flex-xl-grow-0">
-                          <a
+                          <span
                             className="btn btn-sm btn-light bg-white  "
                             type="button"
                             id="dropdownMenuDate2"
                           >
                             Today ({formattedDate})
-                          </a>
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -65,7 +93,7 @@ export default function Dashboard() {
                         <div className="d-flex">
                           <div>
                             <h2 className="mb-0 font-weight-normal">
-                              <i className="icon-sun mr-2"></i>31<sup>C</sup>
+                              <i className="icon-sun mr-2"></i>27<sup>C</sup>
                             </h2>
                           </div>
                           <div className="ml-2">
@@ -143,6 +171,7 @@ export default function Dashboard() {
                           </div>
                         </div>
                       </div>
+                     
                       <div className="row">
                         <div className="col-12">
                           <div className="table-responsive">
@@ -159,29 +188,36 @@ export default function Dashboard() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {FaciltyList.map((getFaciltyList, index) => (
+                                {data.map((item, index) => (
                                   <tr key={index}>
                                     <td>
                                       <img
-                                        src={`https://aphcsukrtya.shsbihar.in/${getFaciltyList.facilityPhoto}`}
+                                        src={`https://aphcsukrtya.shsbihar.in/${item.facilityPhoto}`}
                                         alt="image"
                                       />
                                     </td>
-                                    <td>{getFaciltyList.FacilityState}</td>
-                                    <td>{getFaciltyList.FacilityDistrict}</td>
-                                    <td>{getFaciltyList.FacilityBlock}</td>
+                                    <td>{item.state}</td>
+                                    <td>{item.districtName}</td>
+                                    <td>{item.blockName}</td>
 
-                                    <td>{getFaciltyList.facilityTypeNameEN}</td>
-                                    <td>{getFaciltyList.facilityNameEN}</td>
                                     <td>
-                                      <Link to={"/facility-trans"}>
-                                        <button
-                                          type="submit"
-                                          className="btn btn-primary btn-sm"
-                                        >
-                                          Select
-                                        </button>
-                                      </Link>
+                                      {item.facilityTypeCode}
+                                      <br />
+                                      <br />
+                                      <span className="text-secondary">
+                                        {" "}
+                                        {item.facilityNin}
+                                      </span>
+                                    </td>
+                                    <td>{item.facilityName}</td>
+                                    <td>
+                                      <button
+                                        onClick={() => handleSubmit(item)}
+                                        className="btn btn-primary btn-sm"
+                                      >
+                                        {" "}
+                                        Select{" "}
+                                      </button>
                                     </td>
                                   </tr>
                                 ))}
@@ -195,11 +231,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-
-           
           </div>
         </div>
-    </Base>
+      </Base>
     </>
   );
 }

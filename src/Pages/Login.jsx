@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import LanguageData from "../Data/LanguageList.json";
+import axios from "axios";
 
 export default function Login() {
-  const allowedLanguages = ["hi", "en"];
-
+  const allowedLanguages = ["en"];
+  const [loading, setLoading] = useState(false); // Loading state
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    language: "",
+    language: "1",
   });
 
   const [errors, setErrors] = useState({});
@@ -21,7 +22,8 @@ export default function Login() {
       [e.target.name]: e.target.value,
     });
   };
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const validationErrors = validate(formData);
@@ -32,15 +34,60 @@ export default function Login() {
       return;
     }
 
-    if (formData.username === "test" && formData.password === "123456") {
-      // Validation successful, redirect to dashboard with username
-      alert("Welcome " + formData.username);
-      navigate("/dashboard", { state: { formData } });
-      setSubmitted(true);
-    } else {
-      // Validation failed
-      setErrors({ global: "Invalid email or password" });
+    setLoading(true); // Start loading
+    // Set a flag to check if the component is still mounted
+    let isMounted = true;
+
+    try {
+      const response = await axios.post(
+        "http://115.245.54.211:9090/api/postLogin",
+        {
+          userName: formData.username,
+          password: formData.password,
+        },
+        { timeout: 5000 } // Timeout after 5 seconds
+      );
+
+      const { userID, profileName, userName } = response.data;
+      if (!userID) {
+        throw new Error("Token not provided in response");
+      }
+
+      if (isMounted) {
+        // Update state only if the component is still mounted
+        localStorage.setItem("userID", userID);
+        localStorage.setItem("profileName", profileName);
+        localStorage.setItem("username", userName);
+        alert("Welcome - " + profileName);
+        navigate("/dashboard", {
+          state: { userId: userID, regLid: 1, mappingUserId: userID },
+        });
+        setSubmitted(true);
+      }
+    } catch (err) {
+      if (isMounted) {
+        if (err.response) {
+          setErrors({
+            global:
+              err.response.data.message || "Login failed. Please try again.",
+          });
+        } else if (err.request) {
+          setErrors({
+            global: "No response from server. Please check your network.",
+          });
+        } else {
+          setErrors({
+            global: err.message || "Error in login request. Please try again.",
+          });
+        }
+      }
+    } finally {
+      setLoading(false); // Stop loading
     }
+    // Cleanup function to set `isMounted` to false if the component unmounts
+    return () => {
+      isMounted = false;
+    };
   };
   // Validation logic
   const validate = (data) => {
@@ -51,30 +98,36 @@ export default function Login() {
 
     if (!data.password) {
       newErrors.password = "Password is required";
-    } else if (data.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    } else if (data.password.length < 3) {
+      newErrors.password = "Password must be at least 3 characters";
     }
     if (!data.language) {
       newErrors.language = "Language is required";
     }
     return newErrors;
   };
-
+  useEffect(() => {
+    let isMounted = true;
+    return () => {
+      // Set isMounted to false when component unmounts
+      isMounted = false;
+    };
+  }, []);
   return (
     <>
-      <div class="container-scroller">
-        <div class="container-fluid page-body-wrapper full-page-wrapper">
-          <div class="content-wrapper d-flex align-items-center auth px-0">
-            <div class="row w-100 mx-0">
-              <div class="col-lg-4 mx-auto">
-                <div class="auth-form-light text-left py-5 px-4 px-sm-5">
-                  <div class="brand-logo">
+      <div className="container-scroller">
+        <div className="container-fluid page-body-wrapper full-page-wrapper">
+          <div className="content-wrapper d-flex align-items-center auth px-0">
+            <div className="row w-100 mx-0">
+              <div className="col-lg-4 mx-auto">
+                <div className="auth-form-light text-left py-5 px-4 px-sm-5">
+                  <div className="brand-logo">
                     <img src="logo.png" alt="logo" />
                   </div>
                   <h4>Hello! let's get started</h4>
-                  <h6 class="font-weight-light">Sign in to continue.</h6>
-                  <form class="pt-3" onSubmit={handleSubmit} noValidate>
-                    <div class="form-group">
+                  <h6 className="font-weight-light">Sign in to continue.</h6>
+                  <form className="pt-3" onSubmit={handleSubmit} noValidate>
+                    <div className="form-group">
                       <input
                         type="text"
                         className={`form-control form-control-sm ${
@@ -92,7 +145,7 @@ export default function Login() {
                         </div>
                       )}
                     </div>
-                    <div class="form-group">
+                    <div className="form-group">
                       <input
                         type="password"
                         className={`form-control form-control-sm ${
@@ -110,7 +163,7 @@ export default function Login() {
                         </div>
                       )}
                     </div>
-                    <div class="form-group">
+                    <div className="form-group">
                       <select
                         name="language"
                         className={`form-control form-control-sm ${
@@ -119,7 +172,7 @@ export default function Login() {
                         value={formData.language}
                         onChange={handleChange}
                       >
-                        <option value="">Please select language..</option>
+                        {/* <option value="">Please select language..</option> */}
                         {LanguageData.filter((option) =>
                           allowedLanguages.includes(option.code)
                         )
@@ -136,7 +189,7 @@ export default function Login() {
                         </div>
                       )}
                     </div>
-                    <div class="mt-3">
+                    <div className="mt-3">
                       <button
                         type="submit"
                         className="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
@@ -147,14 +200,14 @@ export default function Login() {
                         <p style={{ color: "red" }}>{errors.global}</p>
                       )}{" "}
                     </div>
-                    <div class="my-2 d-flex justify-content-between align-items-center">
-                      <div class="form-check">
-                        <label class="form-check-label text-muted">
-                          <input type="checkbox" class="form-check-input" />
+                    <div className="my-2 d-flex justify-content-between align-items-center">
+                      <div className="form-check">
+                        <label className="form-check-label text-muted">
+                          <input type="checkbox" className="form-check-input" />
                           Keep me signed in
                         </label>
                       </div>
-                      <a href="#" class="auth-link text-black">
+                      <a href="#" className="auth-link text-black">
                         Forgot password?
                       </a>
                     </div>

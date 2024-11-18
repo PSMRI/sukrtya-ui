@@ -1,8 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import Base from "../Components/Base";
-import FormTranslList from "../Data/2.GetFormTranslList.json";
-import questions from "../Data/3.GetQuestionDetails.json";
+
+import axios from "axios";
+import { useLocation } from "react-router";
+import Webcam from "react-webcam";
 export default function EntryForm() {
+  const location = useLocation();
+  const { formId, transActionId, RegLId } = location.state;
+
   const date = new Date();
   const formattedDate = date
     .toLocaleDateString("en-GB", {
@@ -12,96 +17,193 @@ export default function EntryForm() {
     })
     .replace(/ /g, " ");
 
-  const userName =
-    FormTranslList.objform[0]?.User ||
-    FormTranslList.objPrivateUsers[0]?.profileName;
-  const profileEmail = FormTranslList.objPrivateUsers[0]?.profileEmail;
-
+  const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
-  const [imagePreviews, setImagePreviews] = useState({});
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const [isCameraActive, setCameraActive] = useState(false);
-  const [isCaptureVisible, setCaptureVisible] = useState(false);
-
-  // Function to start the camera
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setCameraActive(true);
-        setCaptureVisible(true); // Show the capture button
-      }
-    } catch (error) {
-      console.error("Error accessing the camera", error);
-    }
-  };
-
-  // Function to capture an image from the video
-  const captureImage = () => {
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-
-    if (video && canvas) {
-      const context = canvas.getContext("2d");
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = canvas.toDataURL("image/png");
-      setImagePreviews((prev) => ({
-        ...prev,
-        [4]: imageData // Assuming questionId 4 is for Camera
-      }));
-      setCameraActive(false);
-      setCaptureVisible(false); // Hide capture button after taking the picture
-      const tracks = video.srcObject.getTracks();
-      tracks.forEach(track => track.stop()); // Stop the video stream
-      video.srcObject = null; // Clear the video source
-    }
-  };
-
-  // Cleanup function to stop the camera on unmount
+  const [errors, setErrors] = useState({});
+  const inputRefs = useRef({}); // Use refs for inputs
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [currentCameraQuestion, setCurrentCameraQuestion] = useState(null); // Store current question object
+  const webcamRef = useRef(null);
   useEffect(() => {
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = videoRef.current.srcObject.getTracks();
-        tracks.forEach(track => track.stop());
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          `http://115.245.54.211:9090/api/questions/getQuestionDetails?formId=${formId}&transActionId=${transActionId}&RegLId=${RegLId}`
+        );
+        setQuestions(response.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
     };
-  }, []);
+    fetchData();
+  }, [formId, transActionId, RegLId]);
 
+  // Initialize answers based on fetched questions
+  useEffect(() => {
+    const initialAnswers = questions.reduce((acc, question) => {
+      acc[question.questionId] = question.answer || "";
+      return acc;
+    }, {});
+    setAnswers(initialAnswers);
+  }, [questions]);
+
+  const [hiddenQuestions, setHiddenQuestions] = useState(new Set());
+
+  // Apply skip logic once `answers` is populated
+  useEffect(() => {
+    if (Object.keys(answers).length === 0) return;
+
+    const initialHiddenQuestions = new Set();
+
+    questions.forEach((question) => {
+      const { questionId, skipanswer, skipQuestionId, answer } = question;
+      if (question && skipanswer) {
+        const skipAnswers = skipanswer.split("/").map(Number);
+
+        const shouldSkip = skipAnswers.includes(Number(answers[questionId]));
+
+        if (shouldSkip) {
+          for (let i = questionId + 1; i < skipQuestionId; i++) {
+            initialHiddenQuestions.add(i);
+          }
+        } else {
+          for (let i = questionId + 1; i < skipQuestionId; i++) {
+            initialHiddenQuestions.delete(i);
+          }
+        }
+      }
+    });
+
+    setHiddenQuestions(initialHiddenQuestions);
+  }, [answers, questions]);
 
   const handleInputChange = (questionId, value) => {
     setAnswers((prevAnswers) => ({
       ...prevAnswers,
       [questionId]: value,
     }));
+
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [questionId]: null,
+    }));
+
+    const question = questions.find((q) => q.questionId === questionId);
+    if (question && question.skipanswer) {
+      const skipAnswers = question.skipanswer.split("/").map(Number);
+      const shouldSkip = skipAnswers.includes(Number(value));
+      setHiddenQuestions((prevHidden) => {
+        const updated = new Set(prevHidden);
+        if (shouldSkip) {
+          for (
+            let i = question.questionId + 1;
+            i < question.skipQuestionId;
+            i++
+          ) {
+            updated.add(i);
+          }
+        } else {
+          for (
+            let i = question.questionId + 1;
+            i < question.skipQuestionId;
+            i++
+          ) {
+            updated.delete(i);
+          }
+        }
+        return updated;
+      });
+    }
   };
-  
 
+  const captureImage = () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setAnswers((prevAnswers) => ({
+      ...prevAnswers,
+      [currentCameraQuestion.questionId]: imageSrc,
+    }));
+    setShowCameraModal(false); // Close the modal after capturing
+  };
 
+  const openCameraModal = (question) => {
+    setCurrentCameraQuestion(question);
+    setShowCameraModal(true);
+  };
 
+  const validateForm = () => {
+    const newErrors = {};
+    let firstInvalidField = null;
+    questions.forEach((question) => {
+      const { questionId, isMandate } = question;
+      if (
+        isMandate === "1" &&
+        !hiddenQuestions.has(questionId) &&
+        !answers[questionId]
+      ) {
+        newErrors[questionId] = "This field is required.";
+        if (!firstInvalidField) firstInvalidField = questionId;
+      }
+    });
+    if (firstInvalidField !== null) {
+      // Focus the first invalid field
+      inputRefs.current[firstInvalidField]?.focus();
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validateForm()) {
+      console.log("Form submitted successfully:", answers);
+      //alert("Form submitted successfully");
+      // You can proceed with the form submission logic here, such as sending data to an API
+    } else {
+      console.log("Form validation failed.");
+      //alert("Form validation failed.");
+    }
+  };
   const renderQuestion = (question) => {
-    const { questionId, questionName, questionType, QuestionOptions,isMandate,maxvalue,minvalue } =
-      question;
+    const {
+      questionId,
+      questionName,
+      questionType,
+      questionOptions,
+      isMandate,
+      maxvalue,
+      minvalue,
+    } = question;
+
+    if (hiddenQuestions.has(questionId)) return null;
 
     switch (questionType) {
       case "Single Choice":
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label>{questionName} {isMandate === "1" && <span style={{ color: 'red', marginLeft: '5px' }}>*</span>}</label>
+              <label>
+                {questionName}
+                {isMandate === "1" && (
+                  <span style={{ color: "red", marginLeft: "5px" }}>*</span>
+                )}
+              </label>
               <select
-                className="form-control"
+                ref={(el) => (inputRefs.current[questionId] = el)}
+                className={`form-control ${
+                  errors[questionId] ? "is-invalid" : ""
+                }`}
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
               >
-                <option value="">Select an option</option>
-                {QuestionOptions.map((option) => (
-                  <option key={option.Value} value={option.Value}>
-                    {option.Text}
+                {/* <option value="">Select an option</option> */}
+                {questionOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.text}
                   </option>
                 ))}
               </select>
+              {errors[questionId] && (
+                <p className="invalid-feedback">{errors[questionId]}</p>
+              )}
             </div>
           </div>
         );
@@ -110,26 +212,34 @@ export default function EntryForm() {
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-            <div>
-            {isCameraActive ? (
-              <>
-                <video ref={videoRef} autoPlay style={{ width: '100%', height: 'auto', borderRadius: '5px' }} />
-                {isCaptureVisible && (
-                  <button type="button" className="btn btn-outline-success btn-icon-text" onClick={captureImage}> <i class="ti-camera btn-icon-prepend"></i> Capture Image</button>
+              <label>
+                {questionName}
+                {isMandate === "1" && (
+                  <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
-              </>
-            ) : (
-              <button type="button"  className="btn btn-outline-success btn-icon-text" onClick={startCamera}> <i class="ti-camera btn-icon-prepend"></i> Open Camera</button>
-            )}
-            <canvas ref={canvasRef} style={{ display: 'none' }} width={640} height={480}></canvas>
-            {imagePreviews[questionId] && (
-              <img
-                src={imagePreviews[questionId]}
-                alt="Captured"
-                style={{ width: '200px', marginTop: '10px', borderRadius: '5px' }}
-              />
-            )}
-          </div>
+              </label>
+              <div>
+                <>
+                  
+                  {answers[questionId] && (
+                    <img
+                      src={answers[questionId]}
+                      alt="Captured"
+                      className="captured-image mb-4"
+                    />
+                  )}
+                  <button
+                    onClick={() => openCameraModal(question)}
+                    type="button"
+                    className="btn btn-outline-success btn-icon-text"
+                  >
+                    <i className="ti-camera btn-icon-prepend"></i> Capture Image
+                  </button>
+                  {errors[questionId] && (
+                    <p className="error-message">{errors[questionId]}</p>
+                  )}
+                </>
+              </div>
             </div>
           </div>
         );
@@ -138,30 +248,55 @@ export default function EntryForm() {
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label>{questionName} {isMandate === "1" && <span style={{ color: 'red', marginLeft: '5px' }}>*</span>}</label>
+              <label>
+                {questionName}
+                {isMandate === "1" && (
+                  <span style={{ color: "red", marginLeft: "5px" }}>*</span>
+                )}
+              </label>
               <input
-                type="number"   min={minvalue}
+                ref={(el) => (inputRefs.current[questionId] = el)}
+                type="number"
+                min={minvalue}
                 max={maxvalue}
-                className="form-control" placeholder="0"
+                className={`form-control ${
+                  errors[questionId] ? "is-invalid" : ""
+                }`}
+                placeholder="0"
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
               />
+              {errors[questionId] && (
+                <p className="invalid-feedback">{errors[questionId]}</p>
+              )}
             </div>
           </div>
         );
       default:
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
-            {" "}
             <div className="form-group">
-              <label>{questionName} {isMandate === "1" && <span style={{ color: 'red', marginLeft: '5px' }}>*</span>}</label>
+              <label>
+                {questionName}
+                {isMandate === "1" && (
+                  <span style={{ color: "red", marginLeft: "5px" }}>*</span>
+                )}
+              </label>
               <input
-                type="text"  placeholder="type here.." maxLength={maxvalue}
-                className="form-control"
+                ref={(el) => (inputRefs.current[questionId] = el)}
+                type="text"
+                placeholder="type here.."
+                maxLength={maxvalue}
+                className={`form-control ${
+                  errors[questionId] ? "is-invalid" : ""
+                }`}
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
               />
-            </div>{" "}
+              {errors[questionId] && (
+                <p className="invalid-feedback">{errors[questionId]}</p>
+              )}
+            </div>
           </div>
         );
     }
@@ -177,11 +312,16 @@ export default function EntryForm() {
                 <div className="row">
                   <div className="col-12 col-xl-8 mb-4 mb-xl-0">
                     <h3 className="font-weight-bold text-capitalize">
-                      Welcome {userName}
+                      Welcome,{" "}
+                      <span className="text-success">
+                        {localStorage.getItem("profileName")}
+                      </span>
                     </h3>
 
                     <h6 className="font-weight-normal mb-0">
-                      <span className="text-primary">{profileEmail}</span>
+                      <span className="text-primary">
+                        {localStorage.getItem("username")}
+                      </span>
                     </h6>
                   </div>
                   <div className="col-12 col-xl-4">
@@ -201,33 +341,66 @@ export default function EntryForm() {
               </div>
             </div>
             <div className="row">
-              <div className="col-md-12">
-                <h5 className="mb-0 text-primary">
-                  <img
-                    src="https://aphcsukrtya.shsbihar.in/facilityicon.png"
-                    alt="image"
-                    style={{ height: "30px" }}
-                  />{" "}
-                  State : BIHAR || District : KATIHAR || Block : KADWA ||
-                  Facility Name : APHC MAHINAGAR
-                </h5>
-              </div>
+              <div className="col-md-12"></div>
             </div>
-            <form>
-              <div className="row mt-4">
-                {questions.sort((a, b) => a.questionId - b.questionId)
-                .map((question) => renderQuestion(question))}
-              </div>
-              <div className="">
-                <button
-                  className="btn btn-primary mr-2"
-                  type="button"
-                  onClick={() => console.log(answers)}
-                >
-                  Submit
-                </button>
-              </div>
-            </form>
+
+            {questions && questions.length > 0 ? (
+              <form onSubmit={(e) => e.preventDefault()}>
+                <div className="row mt-4">
+                  {questions.map((question) => renderQuestion(question))}
+                </div>
+                <div className="">
+                  <button
+                    className="btn btn-primary mr-2"
+                    type="button"
+                    onClick={handleSubmit}
+                  >
+                    Submit
+                  </button>
+                </div>
+
+                {showCameraModal && (
+                  <div className="modal">
+                    <div className="modal-content">
+                      <strong className="text-primary">
+                        {currentCameraQuestion?.questionName}
+                      </strong>
+                      <Webcam  audio={false}
+    videoConstraints={{
+        facingMode: "user", // or "environment" for rear camera
+    }}
+                        ref={webcamRef}
+                        screenshotFormat="image/jpeg"
+                        className="webcam"
+                      />
+                      <br />
+                      <div className="row">
+                        <div className="col-6">
+                          <button style={{width:"100%"}}
+                            className="btn btn-outline-dark"
+                            onClick={() => setShowCameraModal(false)}
+                          >
+                            Close
+                          </button>
+                        </div>
+                        <div className="col-6">
+                          {" "}
+                          <button style={{width:"100%"}}
+                            onClick={captureImage}
+                            className="btn btn-success btn-icon-text "
+                          >
+                            <i className="ti-camera btn-icon-prepend"></i>{" "}
+                            Capture
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </form>
+            ) : (
+              <p>Loading data...</p> // Or display a placeholder message
+            )}
           </div>
         </div>
       </div>
