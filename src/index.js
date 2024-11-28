@@ -4,8 +4,15 @@ import './index.css';
 import ReactDOM from "react-dom";
 import App from './App';
 import { QueryClient, QueryClientProvider } from 'react-query';
- 
+import axios from 'axios';
 
+// Set the base URL
+axios.defaults.baseURL = 'https://sukrtya-ssl.onrender.com';
+//axios.defaults.baseURL = 'http://localhost:9090';
+
+// Optional: Set other defaults, like headers
+axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 window.globalConfigs = (function () {
   var getConfig = function (key) {

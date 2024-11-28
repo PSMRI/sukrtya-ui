@@ -40,12 +40,12 @@ export default function Login() {
 
     try {
       const response = await axios.post(
-        "http://115.245.54.211:9090/api/postLogin",
+        "/api/postLogin",
         {
           userName: formData.username,
           password: formData.password,
         },
-        { timeout: 5000 } // Timeout after 5 seconds
+        { timeout: 50000 } // Timeout after 50 seconds
       );
 
       const { userID, profileName, userName } = response.data;
@@ -58,7 +58,7 @@ export default function Login() {
         localStorage.setItem("userID", userID);
         localStorage.setItem("profileName", profileName);
         localStorage.setItem("username", userName);
-        alert("Welcome - " + profileName);
+        //alert("Welcome - " + profileName);
         navigate("/dashboard", {
           state: { userId: userID, regLid: 1, mappingUserId: userID },
         });
@@ -190,11 +190,11 @@ export default function Login() {
                       )}
                     </div>
                     <div className="mt-3">
-                      <button
+                      <button  disabled={loading}
                         type="submit"
                         className="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
                       >
-                        Login
+                         {loading ? "Please Wait..." : "Login"}
                       </button>
                       {errors.global && (
                         <p style={{ color: "red" }}>{errors.global}</p>

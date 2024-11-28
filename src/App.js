@@ -16,6 +16,7 @@ function App() {
         <Route exact path="/dashboard" element={<Dashboard />} />
         <Route exact path="/facility-trans" element={<FacilityTrans />} />
         <Route exact path="/entry-form" element={<EntryForm />} />
+        
       </Routes>
     </>
   );
