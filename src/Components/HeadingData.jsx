@@ -15,6 +15,7 @@ export default function HeadingData(props) {
     <>
  
     <table>
+    <tbody>
       <tr>
         <td> <img
           src={`https://aphcsukrtya.shsbihar.in/${props.heading.facilityPhoto}`}
@@ -31,6 +32,7 @@ export default function HeadingData(props) {
           {toTitleCase(props.heading.facilityName)}
         </span></td>
       </tr>
+       </tbody>
     </table>
    
     </>

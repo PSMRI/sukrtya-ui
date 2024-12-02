@@ -88,7 +88,7 @@ export default function Dashboard() {
                         </div>
                       </nav>
                       <div  style={{padding:"20px"}}>
-                      <table>
+                      <table><tbody>
                         <tr>
                           <td >State</td>
                           <td style={{width:"20px"}}>:</td>
@@ -113,7 +113,7 @@ export default function Dashboard() {
                           <td>
                             <strong>{item.facilityTypeCode}</strong>
                           </td>
-                        </tr>
+                        </tr></tbody>
                       </table></div>
                       <div className="card-footer">
                         <button
