@@ -8,7 +8,7 @@ export default function Dashboard() {
   const location = useLocation();
   const { userId, regLid, mappingUserId } = location.state;
   const [loading, setLoading] = useState(false); // Loading state
-  
+
 
   const [data, setData] = useState([]);
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function Dashboard() {
     setLoading(true); // Start loading
     const serializedObject = JSON.stringify(item);
     navigate("/facility-trans", { state: { object: serializedObject } });
-    setLoading(false); 
+    setLoading(false);
   };
   return (
     <>
@@ -58,7 +58,7 @@ export default function Dashboard() {
                   <div className="input-group">
                     <div className="input-group-prepend">
                       <span className="input-group-text bg-primary text-white">
-                        <i className="icon-search"></i> 
+                        <i className="icon-search"></i>
                       </span>
                     </div>
                     <input
@@ -87,34 +87,36 @@ export default function Dashboard() {
                           <small>NIN No. : {item.facilityNin}</small>
                         </div>
                       </nav>
-                      <div  style={{padding:"20px"}}>
-                      <table><tbody>
-                        <tr>
-                          <td >State</td>
-                          <td style={{width:"20px"}}>:</td>
-                          <td>
-                            <strong>{item.state}</strong>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>District</td> <td>:</td>
-                          <td>
-                            <strong>{item.districtName}</strong>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Block</td> <td>:</td>
-                          <td>
-                            <strong>{item.blockName}</strong>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Facility Type</td> <td>:</td>
-                          <td>
-                            <strong>{item.facilityTypeCode}</strong>
-                          </td>
-                        </tr></tbody>
-                      </table></div>
+                      <div style={{ padding: "20px" }}>
+                        <table>
+                          <tbody>
+                            <tr>
+                              <td >State</td>
+                              <td style={{ width: "20px" }}>:</td>
+                              <td>
+                                <strong>{item.state}</strong>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>District</td> <td>:</td>
+                              <td>
+                                <strong>{item.districtName}</strong>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Block</td> <td>:</td>
+                              <td>
+                                <strong>{item.blockName}</strong>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Facility Type</td> <td>:</td>
+                              <td>
+                                <strong>{item.facilityTypeCode}</strong>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table></div>
                       <div className="card-footer">
                         <button
                           style={{ width: "100%" }}

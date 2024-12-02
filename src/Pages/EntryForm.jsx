@@ -129,16 +129,16 @@ export default function EntryForm() {
   // Apply skip logic once `answers` is populated
   useEffect(() => {
     if (Object.keys(answers).length === 0) return;
-  
+
     const initialHiddenQuestions = new Set();
-  
+
     questions.forEach((question) => {
       const { questionId, skipanswer, skipQuestionId, answer } = question;
-      
+
       // Check if the question has skip logic
       if (skipanswer) {
         const skipAnswers = skipanswer.split("/").map(Number);
-  
+
         // Hide questions initially if their dependent question has not been answered
         if (!answers[questionId]) {
           if (skipQuestionId) {
@@ -148,13 +148,13 @@ export default function EntryForm() {
             const endIndex = questions.findIndex(
               (q) => q.questionId === skipQuestionId
             );
-  
+
             for (let i = startIndex + 1; i < endIndex; i++) {
               initialHiddenQuestions.add(questions[i].questionId);
             }
           }
         }
-  
+
         // Hide questions if the skip condition is met
         const shouldSkip = skipAnswers.includes(Number(answers[questionId]));
         if (shouldSkip && skipQuestionId) {
@@ -164,17 +164,17 @@ export default function EntryForm() {
           const endIndex = questions.findIndex(
             (q) => q.questionId === skipQuestionId
           );
-  
+
           for (let i = startIndex + 1; i < endIndex; i++) {
             initialHiddenQuestions.add(questions[i].questionId);
           }
         }
       }
     });
-  
+
     setHiddenQuestions(initialHiddenQuestions);
   }, [answers, questions]);
-  
+
 
   useEffect(() => {
     if (navigator.permissions) {
@@ -230,7 +230,7 @@ export default function EntryForm() {
     setAnswers(initialAnswers);
   }, [questions]);
 
-  
+
   const handleInputChange = (questionId, value) => {
     // Update answers and clear error for the question
     setAnswers((prevAnswers) => ({
@@ -243,50 +243,50 @@ export default function EntryForm() {
       [questionId]: null,
     }));
 
-       // Update the answers state
-  const updatedAnswers = { ...answers, [questionId]: value };
+    // Update the answers state
+    const updatedAnswers = { ...answers, [questionId]: value };
 
-  // Set to manage hidden questions
-  const initialHiddenQuestions = new Set(hiddenQuestions);
+    // Set to manage hidden questions
+    const initialHiddenQuestions = new Set(hiddenQuestions);
 
-  questions.forEach((question) => {
-    if (question.skipQuestionId && question.skipanswer) {
-      const skipAnswers = question.skipanswer.split("/").map(Number);
+    questions.forEach((question) => {
+      if (question.skipQuestionId && question.skipanswer) {
+        const skipAnswers = question.skipanswer.split("/").map(Number);
 
-      if (question.questionId === questionId) {
-        const startIndex = questions.findIndex(
-          (q) => q.questionId === questionId
-        );
-        const endIndex = questions.findIndex(
-          (q) => q.questionId === question.skipQuestionId
-        );
+        if (question.questionId === questionId) {
+          const startIndex = questions.findIndex(
+            (q) => q.questionId === questionId
+          );
+          const endIndex = questions.findIndex(
+            (q) => q.questionId === question.skipQuestionId
+          );
 
-        // If value is empty, hide and clear dependent questions
-        if (!value) {
-          for (let i = startIndex + 1; i < endIndex; i++) {
-            const dependentQuestion = questions[i];
-            initialHiddenQuestions.add(dependentQuestion.questionId);
-            delete updatedAnswers[dependentQuestion.questionId]; // Clear dependent question's value
-          }
-        } else {
-          // Otherwise, handle conditional hiding based on skip logic
-          const shouldSkip = skipAnswers.includes(Number(value));
-          for (let i = startIndex + 1; i < endIndex; i++) {
-            const dependentQuestion = questions[i];
-            if (shouldSkip) {
+          // If value is empty, hide and clear dependent questions
+          if (!value) {
+            for (let i = startIndex + 1; i < endIndex; i++) {
+              const dependentQuestion = questions[i];
               initialHiddenQuestions.add(dependentQuestion.questionId);
-              delete updatedAnswers[dependentQuestion.questionId]; // Clear value on hide
-            } else {
-              initialHiddenQuestions.delete(dependentQuestion.questionId);
+              delete updatedAnswers[dependentQuestion.questionId]; // Clear dependent question's value
+            }
+          } else {
+            // Otherwise, handle conditional hiding based on skip logic
+            const shouldSkip = skipAnswers.includes(Number(value));
+            for (let i = startIndex + 1; i < endIndex; i++) {
+              const dependentQuestion = questions[i];
+              if (shouldSkip) {
+                initialHiddenQuestions.add(dependentQuestion.questionId);
+                delete updatedAnswers[dependentQuestion.questionId]; // Clear value on hide
+              } else {
+                initialHiddenQuestions.delete(dependentQuestion.questionId);
+              }
             }
           }
         }
       }
-    }
-  });
+    });
 
-  setAnswers(updatedAnswers); // Update the answers state
-  setHiddenQuestions(initialHiddenQuestions); // Update the hidden questions state
+    setAnswers(updatedAnswers); // Update the answers state
+    setHiddenQuestions(initialHiddenQuestions); // Update the hidden questions state
   };
 
   const base64ToBlob = (base64, mimeType = "image/jpeg") => {
@@ -439,6 +439,7 @@ export default function EntryForm() {
     }
   }, [latitude, longitude, apiKey]);
   const handleSubmit = async () => {
+
     setLoading(true); // Start loading
     if (validateForm()) {
       const responses = await axios.post("/api/assessment/save", {
@@ -463,11 +464,15 @@ export default function EntryForm() {
       if (responses.data.status === "success") {
         alert("Form submitted successfully");
         navigate("/facility-trans", { state: { object: serializedObject } });
+        setLoading(false); // stop loading
       } else {
         alert(responses.data.status + " - " + responses.data.message);
+        setLoading(false); // stop loading
       }
+      
     }
-    setLoading(false); // stop loading
+     
+   
   };
   const renderQuestion = (question) => {
     const {
@@ -488,16 +493,15 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                 {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
               </label>
               <select
                 ref={(el) => (inputRefs.current[questionId] = el)}
-                className={`text-primary form-control ${
-                  errors[questionId] ? "is-invalid" : ""
-                }`}
+                className={`text-primary form-control ${errors[questionId] ? "is-invalid" : ""
+                  }`}
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
               >
@@ -520,7 +524,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                  {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -572,22 +576,32 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                 {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
               </label>
               <input
                 ref={(el) => (inputRefs.current[questionId] = el)}
-                type="number"
+                type="number" autocomplete="off"
                 min={minvalue}
                 max={maxvalue}
-                className={`text-primary form-control ${
-                  errors[questionId] ? "is-invalid" : ""
-                }`}
+                className={`text-primary form-control ${errors[questionId] ? "is-invalid" : ""
+                  }`}
                 placeholder="0"
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
+                onKeyDown={(e) => {
+                  if (['e', 'E', '+', '-'].includes(e.key)) {
+                    e.preventDefault(); // Prevent restricted keys
+                  }
+                }}
+                onInput={(e) => {
+                  const value = e.target.value;
+                  if (/[eE+\-]/.test(value)) {
+                    e.target.value = value.replace(/[eE+\-]/g, ''); // Remove invalid characters
+                  }
+                }}
               />
               {errors[questionId] && (
                 <p className="invalid-feedback">{errors[questionId]}</p>
@@ -600,19 +614,18 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                 {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
               </label>
               <input
                 ref={(el) => (inputRefs.current[questionId] = el)}
-                type="text"
+                type="text" autocomplete="off"
                 placeholder="type here.."
                 maxLength={maxvalue}
-                className={`text-primary form-control ${
-                  errors[questionId] ? "is-invalid" : ""
-                }`}
+                className={`text-primary form-control ${errors[questionId] ? "is-invalid" : ""
+                  }`}
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
               />

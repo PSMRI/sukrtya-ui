@@ -44,8 +44,7 @@ export default function Login() {
         {
           userName: formData.username,
           password: formData.password,
-        },
-        { timeout: 50000 } // Timeout after 50 seconds
+        } 
       );
 
       const { userID, profileName, userName } = response.data;
