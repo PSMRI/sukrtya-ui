@@ -7,12 +7,13 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import axios from 'axios';
 
 // Set the base URL
-axios.defaults.baseURL = 'https://render-r6js.onrender.com';
+axios.defaults.baseURL = 'https://render-2m63.onrender.com';
 //axios.defaults.baseURL = 'http://localhost:8080';
 
 // Optional: Set other defaults, like headers
-axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';
-axios.defaults.headers.post['Content-Type'] = 'application/json';
+//axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';
+//axios.defaults.headers.post['Content-Type'] = 'application/json';
+//axios.defaults.withCredentials = true;
 
 window.globalConfigs = (function () {
   var getConfig = function (key) {

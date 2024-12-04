@@ -14,12 +14,28 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
+
         const response = await axios.get(
-          `/api/GetFacilityList?UserId=${userId}&RegLid=${regLid}&MappingUserId=${mappingUserId}`
+          `/api/GetFacilityList?UserId=${userId}&RegLid=${regLid}&MappingUserId=${mappingUserId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
+
         setData(response.data);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        if (error.response && error.response.status === 401) {
+          // Token expired, redirect to login with message
+          alert("Session expired. Please log in again.");
+          localStorage.clear();
+          window.location.href = "/";
+
+        } else {
+          console.error("Error fetching data:", error);
+        }
       }
     };
 
@@ -41,7 +57,7 @@ export default function Dashboard() {
               <div className="row">
                 <div className="col-md-4">
                   <h3 className="font-weight-bold text-capitalize">
-                    Welcome,{" "}
+                    Welcome,
                     <span className="text-success">
                       {localStorage.getItem("profileName")}
                     </span>
@@ -91,32 +107,36 @@ export default function Dashboard() {
                         <table>
                           <tbody>
                             <tr>
-                              <td >State</td>
+                              <td>State</td>
                               <td style={{ width: "20px" }}>:</td>
                               <td>
                                 <strong>{item.state}</strong>
                               </td>
                             </tr>
                             <tr>
-                              <td>District</td> <td>:</td>
+                              <td>District</td>
+                              <td style={{ width: "20px" }}>:</td>
                               <td>
                                 <strong>{item.districtName}</strong>
                               </td>
                             </tr>
                             <tr>
-                              <td>Block</td> <td>:</td>
+                              <td>Block</td>
+                              <td style={{ width: "20px" }}>:</td>
                               <td>
                                 <strong>{item.blockName}</strong>
                               </td>
                             </tr>
                             <tr>
-                              <td>Facility Type</td> <td>:</td>
+                              <td>Facility Type</td>
+                              <td style={{ width: "20px" }}>:</td>
                               <td>
                                 <strong>{item.facilityTypeCode}</strong>
                               </td>
                             </tr>
                           </tbody>
-                        </table></div>
+                        </table>
+                      </div>
                       <div className="card-footer">
                         <button
                           style={{ width: "100%" }}

@@ -115,13 +115,29 @@ export default function EntryForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
         const response = await axios.get(
-          `/api/questions/getQuestionDetails?formId=${formId}&transActionId=${transActionId}&RegLId=${RegLId}`
+          `/api/questions/getQuestionDetails?formId=${formId}&transActionId=${transActionId}&RegLId=${RegLId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         setQuestions(response.data);
       } catch (error) {
-        setError("Error fetching data : " + error);
-        console.error("Error fetching data:", error);
+        if (error.response && error.response.status === 401) {
+          // Token expired, redirect to login with message
+          alert("Session expired. Please log in again.");
+          localStorage.clear();
+          window.location.href = "/";
+
+        } else {
+          setError("Error fetching data : " + error);
+          console.error("Error fetching data:", error);
+        }
+
+
       }
     };
     fetchData();
@@ -439,40 +455,60 @@ export default function EntryForm() {
     }
   }, [latitude, longitude, apiKey]);
   const handleSubmit = async () => {
-
     setLoading(true); // Start loading
     if (validateForm()) {
-      const responses = await axios.post("/api/assessment/save", {
-        transactionId: transActionId,
-        latitude: latitude,
-        longitude: longitude,
-        googleAddress: address,
-        userId: localStorage.getItem("userID"),
-        formId: formId,
-        facilityNIN: myObject.facilityNin,
-        postAnswer: Object.entries(answers)
-          .map(([questionId, value]) => ({
-            questionId: parseInt(questionId),
-            questionType: questions.find(
-              (q) => q.questionId === parseInt(questionId)
-            ).questionType,
-            answer: value,
-          }))
-          .filter((item) => item.answer),
-      });
-
-      if (responses.data.status === "success") {
-        alert("Form submitted successfully");
-        navigate("/facility-trans", { state: { object: serializedObject } });
-        setLoading(false); // stop loading
-      } else {
-        alert(responses.data.status + " - " + responses.data.message);
-        setLoading(false); // stop loading
+      try {
+        const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
+        const responses = await axios.post(
+          "/api/assessment/save",
+          {
+            transactionId: transActionId,
+            latitude: latitude,
+            longitude: longitude,
+            googleAddress: address,
+            userId: localStorage.getItem("userID"),
+            formId: formId,
+            facilityNIN: myObject.facilityNin,
+            postAnswer: Object.entries(answers)
+              .map(([questionId, value]) => ({
+                questionId: parseInt(questionId),
+                questionType: questions.find(
+                  (q) => q.questionId === parseInt(questionId)
+                ).questionType,
+                answer: value,
+              }))
+              .filter((item) => item.answer),
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Pass token in the Authorization header
+            },
+          });
+          if (responses.data.status === "success") {
+            alert("Form submitted successfully");
+            navigate("/facility-trans", { state: { object: serializedObject } });
+            setLoading(false); // stop loading
+          } else {
+            alert(responses.data.status + " - " + responses.data.message);
+            setLoading(false); // stop loading
+          }
       }
+      catch (error) {
+        if (error.response && error.response.status === 401) {
+          // Token expired, redirect to login with message
+          alert("Session expired. Please log in again.");
+          localStorage.clear();
+          window.location.href = "/";
+
+        } else {
+          console.error("Error fetching data:", error);
+          setLoading(false); // stop loading
+        }
+      }
+
       
+
     }
-     
-   
   };
   const renderQuestion = (question) => {
     const {
@@ -583,7 +619,7 @@ export default function EntryForm() {
               </label>
               <input
                 ref={(el) => (inputRefs.current[questionId] = el)}
-                type="number" autocomplete="off"
+                type="number" autoComplete="off"
                 min={minvalue}
                 max={maxvalue}
                 className={`text-primary form-control ${errors[questionId] ? "is-invalid" : ""
@@ -621,7 +657,7 @@ export default function EntryForm() {
               </label>
               <input
                 ref={(el) => (inputRefs.current[questionId] = el)}
-                type="text" autocomplete="off"
+                type="text" autoComplete="off"
                 placeholder="type here.."
                 maxLength={maxvalue}
                 className={`text-primary form-control ${errors[questionId] ? "is-invalid" : ""
@@ -758,7 +794,7 @@ export default function EntryForm() {
                                     class="btn  btn-sm btn-toggle"
                                     data-toggle="button"
                                     aria-pressed="false"
-                                    autocomplete="off"
+                                    autoComplete="off"
                                   >
                                     <div class="switch"></div>{" "}
                                     <div className="facing-mode-container">

@@ -15,15 +15,30 @@ export default function FacilityTrans() {
   
   const [data, setData] = useState([]);
   useEffect(() => {
+    const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          `/api/GetFormTransactionList?facilytyType=${myObject.facilityTypeId}&FacilityId=${myObject.facilityId}&RgLId=1`
+          `/api/GetFormTransactionList?facilytyType=${myObject.facilityTypeId}&FacilityId=${myObject.facilityId}&RgLId=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+          
         );
         
         setData(response.data);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        if (error.response && error.response.status === 401) {
+          // Token expired, redirect to login with message
+          alert("Session expired. Please log in again.");
+          localStorage.clear();
+          window.location.href = "/";
+
+        } else {
+          console.error("Error fetching data:", error);
+        }
       }
     };
 

@@ -44,16 +44,18 @@ export default function Login() {
         {
           userName: formData.username,
           password: formData.password,
-        } 
+        }
       );
-
-      const { userID, profileName, userName } = response.data;
-      if (!userID) {
+      console.log(response.data.token);
+      const { userID, profileName, userName } = response.data.user;
+     
+      if (!userName) {
         throw new Error("Token not provided in response");
       }
 
       if (isMounted) {
         // Update state only if the component is still mounted
+        localStorage.setItem("authToken", response.data.token);
         localStorage.setItem("userID", userID);
         localStorage.setItem("profileName", profileName);
         localStorage.setItem("username", userName);
@@ -129,9 +131,8 @@ export default function Login() {
                     <div className="form-group">
                       <input
                         type="text"
-                        className={`form-control form-control-sm ${
-                          errors.username ? "is-invalid" : ""
-                        }`}
+                        className={`form-control form-control-sm ${errors.username ? "is-invalid" : ""
+                          }`}
                         placeholder="Username"
                         aria-label="Username"
                         name="username"
@@ -147,9 +148,8 @@ export default function Login() {
                     <div className="form-group">
                       <input
                         type="password"
-                        className={`form-control form-control-sm ${
-                          errors.password ? "is-invalid" : ""
-                        }`}
+                        className={`form-control form-control-sm ${errors.password ? "is-invalid" : ""
+                          }`}
                         placeholder="Password"
                         aria-label="Password"
                         name="password"
@@ -165,9 +165,8 @@ export default function Login() {
                     <div className="form-group">
                       <select
                         name="language"
-                        className={`form-control form-control-sm ${
-                          errors.language ? "is-invalid" : ""
-                        }`}
+                        className={`form-control form-control-sm ${errors.language ? "is-invalid" : ""
+                          }`}
                         value={formData.language}
                         onChange={handleChange}
                       >
@@ -189,11 +188,11 @@ export default function Login() {
                       )}
                     </div>
                     <div className="mt-3">
-                      <button  disabled={loading}
+                      <button disabled={loading}
                         type="submit"
                         className="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
                       >
-                         {loading ? "Please Wait..." : "Login"}
+                        {loading ? "Please Wait..." : "Login"}
                       </button>
                       {errors.global && (
                         <p style={{ color: "red" }}>{errors.global}</p>
