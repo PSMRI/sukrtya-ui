@@ -105,19 +105,49 @@ export default function EntryForm() {
   const handleUserMedia = () => {
     setIsWebcamActive(true);
   };
+  const canvasRef = useRef(null); // Create a ref for the canvas
+
   const [rotation, setRotation] = useState({});
   const handleRotate = (questionId) => {
     setRotation((prev) => ({
       ...prev,
-      [questionId]: (prev[questionId] || 0) + 90, // Increment rotation by 90 degrees
+      [questionId]: (prev[questionId] || 0) + 0, // Increment rotation by 90 degrees
     }));
+
+    // Get the current image from answers
+    const imageSrc = answers[questionId];
+    if (imageSrc) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+      img.src = imageSrc;
+
+      img.onload = () => {
+        const currentRotation = (rotation[questionId] || 0) + 90; // Use rotation state instead of prev
+        canvas.width = img.height; // Set canvas width to image height for rotation
+        canvas.height = img.width; // Set canvas height to image width for rotation
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2); // Move to center of canvas
+        ctx.rotate((currentRotation * Math.PI) / 180); // Rotate the canvas
+        ctx.drawImage(img, -img.width / 2, -img.height / 2); // Draw the image centered
+        ctx.restore();
+
+        // Get the rotated image as a base64 string
+        const rotatedBase64 = canvas.toDataURL();
+        setAnswers((prevAnswers) => ({
+          ...prevAnswers,
+          [questionId]: rotatedBase64, // Update the answer with the rotated image
+        }));
+      };
+    }
   };
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
         const response = await axios.get(
-          `/api/questions/getQuestionDetails?formId=${formId}&transActionId=${transActionId}&RegLId=${RegLId}`,
+          `/sukrtya/api/questions?formId=${formId}&transActionId=${transActionId}&RegLId=${RegLId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -248,16 +278,28 @@ export default function EntryForm() {
 
 
   const handleInputChange = (questionId, value) => {
-    // Update answers and clear error for the question
-    setAnswers((prevAnswers) => ({
-      ...prevAnswers,
-      [questionId]: value,
-    }));
-
+    // Sanitize input (basic example)
+    const sanitizedValue = value.replace(/<[^>]*>/g, ''); // Remove HTML tags
+    if (/^[a-zA-Z0-9]*$/.test(sanitizedValue)) {
+      // Update answers and clear error for the question
+      setAnswers((prevAnswers) => ({
+        ...prevAnswers,
+        [questionId]: sanitizedValue,
+      }));
+      // Clear the error for the specific question
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [questionId]: null,
+      }));
+    } else {
+      // Set an error for the specific question
     setErrors((prevErrors) => ({
       ...prevErrors,
-      [questionId]: null,
+      [questionId]: 'Invalid input detected! Only alphanumeric characters are allowed.',
     }));
+ 
+    }
+
 
     // Update the answers state
     const updatedAnswers = { ...answers, [questionId]: value };
@@ -399,13 +441,13 @@ export default function EntryForm() {
         if (minvalue && numericValue < minvalue) {
           newErrors[
             questionId
-          ] = `${questionName} must be at least ${minvalue}`;
+          ] = `${questionName} number should be at least ${minvalue}`;
           if (!firstInvalidField) firstInvalidField = questionId;
         }
         if (maxvalue && numericValue > maxvalue) {
           newErrors[
             questionId
-          ] = `${questionName} must be no more than ${maxvalue}`;
+          ] = `${questionName} number is more than ${maxvalue}`;
           if (!firstInvalidField) firstInvalidField = questionId;
         }
       }
@@ -460,7 +502,7 @@ export default function EntryForm() {
       try {
         const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
         const responses = await axios.post(
-          "/api/assessment/save",
+          "/sukrtya/api/assessments/save",
           {
             transactionId: transActionId,
             latitude: latitude,
@@ -484,14 +526,14 @@ export default function EntryForm() {
               Authorization: `Bearer ${token}`, // Pass token in the Authorization header
             },
           });
-          if (responses.data.status === "success") {
-            alert("Form submitted successfully");
-            navigate("/facility-trans", { state: { object: serializedObject } });
-            setLoading(false); // stop loading
-          } else {
-            alert(responses.data.status + " - " + responses.data.message);
-            setLoading(false); // stop loading
-          }
+        if (responses.data.status === "success") {
+          alert("Form submitted successfully");
+          navigate("/facility-trans", { state: { object: serializedObject } });
+          setLoading(false); // stop loading
+        } else {
+          alert(responses.data.status + " - " + responses.data.message);
+          setLoading(false); // stop loading
+        }
       }
       catch (error) {
         if (error.response && error.response.status === 401) {
@@ -506,9 +548,10 @@ export default function EntryForm() {
         }
       }
 
-      
+
 
     }
+    setLoading(false);
   };
   const renderQuestion = (question) => {
     const {
@@ -529,7 +572,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                {questionName}
+                {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -560,7 +603,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                {questionName}
+                {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -568,18 +611,26 @@ export default function EntryForm() {
               <div>
                 <>
                   {answers[questionId] && (
-                    <>
+
+                    <div className="image-container">
+                      <canvas ref={canvasRef} style={{ display: 'none' }} />
                       <img
                         src={answers[questionId]}
                         title={`File Size: ${imageSize} KB`}
                         alt="Captured"
-                        className="captured-image mb-4"
+                        className="img-thumbnail captured-image mb-4"
                         style={{
+                          maxWidth: "100%",
+                          height: "auto",
                           transform: `rotate(${rotation[questionId] || 0}deg)`,
                           transition: "transform 0.5s ease",
+                          display: "block",
+                          margin: "0 auto",
+                          transformOrigin: "center",
+                          padding: rotation[questionId] ? "10px" : "0",
                         }}
                       />
-                    </>
+                    </div>
                   )}
                   {answers[questionId] && (
                     <button
@@ -612,7 +663,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                {questionName}
+                {questionId} -  {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -650,7 +701,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                {questionName}
+                {questionId} -  {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -791,12 +842,12 @@ export default function EntryForm() {
                                   <button
                                     onClick={toggleCamera}
                                     type="button"
-                                    class="btn  btn-sm btn-toggle"
+                                    className="btn  btn-sm btn-toggle"
                                     data-toggle="button"
                                     aria-pressed="false"
                                     autoComplete="off"
                                   >
-                                    <div class="switch"></div>{" "}
+                                    <div className="switch"></div>{" "}
                                     <div className="facing-mode-container">
                                       {facingMode === "user" ? (
                                         <span style={{ paddingLeft: "20px" }}>

@@ -19,7 +19,7 @@ export default function FacilityTrans() {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          `/api/GetFormTransactionList?facilytyType=${myObject.facilityTypeId}&FacilityId=${myObject.facilityId}&RgLId=1`,
+          `/sukrtya/api/forms?facilytyType=${myObject.facilityTypeId}&FacilityId=${myObject.facilityId}&RgLId=1`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

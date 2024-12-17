@@ -17,7 +17,7 @@ export default function Dashboard() {
         const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
 
         const response = await axios.get(
-          `/api/GetFacilityList?UserId=${userId}&RegLid=${regLid}&MappingUserId=${mappingUserId}`,
+          `/sukrtya/api/facilities?UserId=${userId}&RegLid=${regLid}&MappingUserId=${mappingUserId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

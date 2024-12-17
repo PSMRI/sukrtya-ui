@@ -40,7 +40,7 @@ export default function Login() {
 
     try {
       const response = await axios.post(
-        "/api/postLogin",
+        "/sukrtya/api/login",
         {
           userName: formData.username,
           password: formData.password,

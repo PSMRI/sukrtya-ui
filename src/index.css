@@ -35,3 +35,9 @@
     color: red;
     font-size: 0.9rem;
   }
+  .image-container {
+    position: relative;
+    overflow: visible; /* Allows rotated image to show fully */
+    padding: 40px;     /* Add space to prevent overlap */
+    text-align: center; /* Center the content */
+  }
