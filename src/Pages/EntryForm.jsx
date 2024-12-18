@@ -280,7 +280,10 @@ export default function EntryForm() {
   const handleInputChange = (questionId, value) => {
     // Sanitize input (basic example)
     const sanitizedValue = value.replace(/<[^>]*>/g, ''); // Remove HTML tags
-    if (/^[a-zA-Z0-9]*$/.test(sanitizedValue)) {
+    // Define the allowed pattern
+  const allowedPattern = /^[a-zA-Z0-9 .,()&%@_!#$|/]*$/;
+
+   if (allowedPattern.test(sanitizedValue)) {
       // Update answers and clear error for the question
       setAnswers((prevAnswers) => ({
         ...prevAnswers,
@@ -295,7 +298,7 @@ export default function EntryForm() {
       // Set an error for the specific question
     setErrors((prevErrors) => ({
       ...prevErrors,
-      [questionId]: 'Invalid input detected! Only alphanumeric characters are allowed.',
+      [questionId]: 'Invalid input detected!',
     }));
  
     }
@@ -577,9 +580,10 @@ export default function EntryForm() {
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
               </label>
+         
               <select
                 ref={(el) => (inputRefs.current[questionId] = el)}
-                className={`text-primary form-control ${errors[questionId] ? "is-invalid" : ""
+                className={`text-primary form-control form-select ${errors[questionId] ? "is-invalid" : ""
                   }`}
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
@@ -590,7 +594,7 @@ export default function EntryForm() {
                     {option.text}
                   </option>
                 ))}
-              </select>
+              </select> 
               {errors[questionId] && (
                 <p className="invalid-feedback">{errors[questionId]}</p>
               )}

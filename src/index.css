@@ -41,3 +41,19 @@
     padding: 40px;     /* Add space to prevent overlap */
     text-align: center; /* Center the content */
   }
+  
+  .form-control.form-select.is-invalid {
+    padding-right: 2.5rem; /* Space for validation icon */
+    background-position: calc(100% - 2rem) center; /* Adjust icon position */
+    background-repeat: no-repeat;
+  }
+  
+  .is-invalid::after {
+    content: '!';
+    color: red;
+    position: absolute;
+    right: 1rem; /* Space for the icon */
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: bold;
+  }
