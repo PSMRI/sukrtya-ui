@@ -1,10 +1,25 @@
-import React, { useState } from "react";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function NavBar() {
+  const [labels, setLabels] = useState({});
+  useEffect(() => {
+    const fetchLabel = async () => {
+      try {
+        const labelResponse = await axios.get(
+          `sukrtya/api/language-labels/getLabels?formId=6&regLId=${localStorage.getItem("language")}`
+        );
+        setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
+      } catch (error) {
+        console.error("Error fetching labels:", error);
+      }
+    };
+    fetchLabel();
+  }, []);
   const navigate = useNavigate();
   const handleLogout = () => {
-    const confirmLogout = window.confirm("Are you sure you want to log out?");
+    const confirmLogout = window.confirm(labels[12] || "Are you sure you want to log out?");
     if (confirmLogout) {
       localStorage.clear();
       window.location.href = "/"; // Adjust the URL as needed
@@ -39,7 +54,7 @@ export default function NavBar() {
                 aria-labelledby="notificationDropdown"
               >
                 <p className="mb-0 font-weight-normal float-left dropdown-header">
-                  Notifications
+                 {labels[13] || "Notifications"}
                 </p>
                 <a className="dropdown-item preview-item">
                   <div className="preview-thumbnail">
@@ -73,18 +88,18 @@ export default function NavBar() {
               >
                 <Link to="/change-password" className="dropdown-item">
                   <i className="ti-key text-primary"></i>
-                 Change Password
+                 {labels[1] || "Change Password"}
                 </Link>
 
                 <Link to="/profile" className="dropdown-item">
                   <i className="ti-user text-primary"></i>
-                  Profile
+                  {labels[2] || "Profile"}
                 </Link>
 
 
                 <a className="dropdown-item" onClick={handleLogout}>
-                  <i className="ti-power-off text-primary"></i>
-                  Logout
+                  <i className="ti-power-off text-danger"></i>
+                 <span className="text-danger"> {labels[3] || "Logout"}</span>
                 </a>
               </div>
             </li>

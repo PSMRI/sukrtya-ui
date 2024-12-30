@@ -4,12 +4,12 @@ import LanguageData from "../Data/LanguageList.json";
 import axios from "axios";
 
 export default function Login() {
-  const allowedLanguages = ["en"];
+  const allowedLanguages = ["1","2"];
   const [loading, setLoading] = useState(false); // Loading state
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    language: "1",
+    language: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -46,9 +46,9 @@ export default function Login() {
           password: formData.password,
         }
       );
-      console.log(response.data.token);
+      //console.log(response.data.token);
       const { userID, profileName, userName } = response.data.user;
-     
+
       if (!userName) {
         throw new Error("Token not provided in response");
       }
@@ -59,9 +59,10 @@ export default function Login() {
         localStorage.setItem("userID", userID);
         localStorage.setItem("profileName", profileName);
         localStorage.setItem("username", userName);
+        localStorage.setItem("language",  formData.language);
         //alert("Welcome - " + profileName);
         navigate("/dashboard", {
-          state: { userId: userID, regLid: 1, mappingUserId: userID },
+          state: { userId: userID, regLid: formData.language, mappingUserId: userID },
         });
         setSubmitted(true);
       }
@@ -114,6 +115,12 @@ export default function Login() {
       isMounted = false;
     };
   }, []);
+
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setPasswordVisible((prevState) => !prevState);
+  };
   return (
     <>
       <div className="container-scroller">
@@ -131,7 +138,7 @@ export default function Login() {
                     <div className="form-group">
                       <input
                         type="text"
-                        className={`form-control form-control-sm ${errors.username ? "is-invalid" : ""
+                        className={`text-primary form-control form-control-sm ${errors.username ? "is-invalid" : ""
                           }`}
                         placeholder="Username"
                         aria-label="Username"
@@ -146,31 +153,45 @@ export default function Login() {
                       )}
                     </div>
                     <div className="form-group">
-                      <input
-                        type="password"
-                        className={`form-control form-control-sm ${errors.password ? "is-invalid" : ""
-                          }`}
-                        placeholder="Password"
-                        aria-label="Password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                      />
-                      {errors.password && (
-                        <div className="invalid-feedback">
-                          {errors.password}
-                        </div>
-                      )}
-                    </div>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type={passwordVisible ? "text" : "password"}
+                          className={`text-primary form-control form-control-sm ${errors.password ? "is-invalid" : ""
+                            }`}
+                          placeholder="Password"
+                          aria-label="Password"
+                          name="password"
+                          value={formData.password}
+                          onChange={handleChange}
+                        />
+                        {formData.password && (
+                          <span
+                            onClick={togglePasswordVisibility}
+                            style={{
+                              position: "absolute",
+                              right: "10px",
+                              top: "20px",
+                              transform: "translateY(-50%)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {passwordVisible ? "👁️" : "👁️‍🗨️"}
+                          </span>)}
+                        {errors.password && (
+                          <div className="invalid-feedback">
+                            {errors.password}
+                          </div>
+                        )}
+                      </div></div>
                     <div className="form-group">
                       <select
                         name="language"
-                        className={`form-control form-control-sm ${errors.language ? "is-invalid" : ""
+                        className={`text-primary form-control form-control-sm ${errors.language ? "is-invalid" : ""
                           }`}
                         value={formData.language}
                         onChange={handleChange}
                       >
-                        {/* <option value="">Please select language..</option> */}
+                        <option value="">Please select language..</option>
                         {LanguageData.filter((option) =>
                           allowedLanguages.includes(option.code)
                         )

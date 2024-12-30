@@ -12,21 +12,36 @@ export default function FacilityTrans() {
   const serializedObject = location.state?.object;
   const myObject = JSON.parse(serializedObject);
 
-  
+
   const [data, setData] = useState([]);
+  const [labels, setLabels] = useState({});
+  useEffect(() => {
+    const fetchLabel = async () => {
+      try {
+        const labelResponse = await axios.get(
+          `sukrtya/api/language-labels/getLabels?formId=3&regLId=${localStorage.getItem("language")}`
+        );
+        setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
+      } catch (error) {
+        console.error("Error fetching labels:", error);
+      }
+    };
+    fetchLabel();
+  }, []);
   useEffect(() => {
     const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          `/sukrtya/api/forms?facilytyType=${myObject.facilityTypeId}&FacilityId=${myObject.facilityId}&RgLId=1`,
+          `/sukrtya/api/forms?facilytyType=${myObject.facilityTypeId}&FacilityId=${myObject.facilityId}&RgLId=${localStorage.getItem("language")}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
-          
+
         );
+
         
         setData(response.data);
       } catch (error) {
@@ -46,12 +61,13 @@ export default function FacilityTrans() {
   }, [myObject.facilityTypeId, myObject.facilityId]);
 
   const handleSubmit = (formId, transActionId, user) => {
+  
     setLoading(true); // Start loading
     navigate("/entry-form", {
       state: {
         formId: formId,
         transActionId: transActionId,
-        RegLId: 1,
+        RegLId:localStorage.getItem("language"),
         user: user,
         object: serializedObject,
       },
@@ -66,7 +82,7 @@ export default function FacilityTrans() {
             <div className="row">
               <div className="col-md-4">
                 <h3 className="font-weight-bold text-capitalize">
-                  Welcome,
+                {labels[14] || "Welcome"},
                   <span className="text-success">
                     {localStorage.getItem("profileName")}
                   </span>
@@ -89,7 +105,7 @@ export default function FacilityTrans() {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="type here to search.."
+                    placeholder={labels[1] || "type here to search.."}
                   />
                 </div>
               </div>
@@ -101,24 +117,24 @@ export default function FacilityTrans() {
             </div>
             {data && data.length > 0 ? (
               <div className="row mt-4">
-                <div className="col-md-4 grid-margin ">
-                  {data.map((item, index) => (
-                    
 
-                    <div  key={index}>
+                {data.map((item, index) => (
+
+                  <div className="col-md-4 grid-margin " key={index}>
+                   
                       {!!item.transactionId ? (
-                        <div className="card " style={{backgroundColor:"#aec7af"}}  >
+                        <div className="card " style={{ backgroundColor: "#aec7af" }}  >
                           <div className="card-body" style={{ color: "black" }}>
                             <p className="font-weight-500">
-                              Survey Name : {item.fromName}
+                            {labels[7] || "Servey Name"}    : {item.fromName}
                               <br />
-                              User : {localStorage.getItem("profileName")}
-                              
-                              <br /> Transaction Id : <strong> {item.transactionId}</strong>
+                              {labels[8] || "User"} : {localStorage.getItem("profileName")}
+
+                              <br />{labels[9] || "Transaction Id"}  : <strong> {item.transactionId}</strong>
                               <br />
-                              Created Date : {item.userSubmissionDate}
+                              {labels[10] || "Created Date"} : {item.userSubmissionDate}
                               <br />
-                              Last Action Date : {item.userSubmissionDate}
+                              {labels[11] || "Last Action Date"} : {item.userSubmissionDate}
                               <br />
                             </p>
                             <div className="text-left">
@@ -134,20 +150,22 @@ export default function FacilityTrans() {
                                 }
                                 className="btn btn-primary btn-sm"
                               >
-                                {loading ? "Please Wait..." : "Update"}
+                                {loading ? "Please Wait..." : labels[12] || "Update"}
                               </button>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="card" style={{backgroundColor:"#e5a0a0"}}  >
+                        <div className="card" style={{ backgroundColor: "#e5a0a0" }}  >
                           <div className="card-body" style={{ color: "black" }}>
                             <p className="font-weight-500">
-                              Survey Name : {item.fromName}
+                            {labels[7] || "Servey Name"}: {item.fromName}
                               <br />
-                              User : {localStorage.getItem("profileName")}
+                              {labels[8] || "User"} : {localStorage.getItem("profileName")}
+                              <br />   <br />
+                              <span className="text-white"><strong>{labels[4] || "Not filled by any one !!"} </strong></span>   <br />   <br />
                             </p>
-                            <h4 className="text-white"><strong>Not filled by any one !!</strong></h4><br/>
+
                             <div className="text-left">
                               <button
                                 style={{ width: "100%" }}
@@ -161,24 +179,25 @@ export default function FacilityTrans() {
                                 }
                                 className="btn btn-primary btn-sm"
                               >
-                                {loading ? "Please Wait..." : "Select"}
+                                {loading ? "Please Wait..." : labels[13] || "Select"}
                               </button>
                             </div>
                           </div>
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
+                   
+                ))}
               </div>
+
             ) : (
               <div className="text-center">
-              <br /> <br />
-              <img
-                src="./images/loading.gif"
-                style={{ height: "100px" }}
-              />
-            </div> 
+                <br /> <br />
+                <img
+                  src="./images/loading.gif"
+                  style={{ height: "100px" }}
+                />
+              </div>
             )}
           </div>
         </div>

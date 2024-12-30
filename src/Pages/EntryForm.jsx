@@ -26,9 +26,13 @@ export default function EntryForm() {
   const [hiddenQuestions, setHiddenQuestions] = useState(new Set());
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [imageSize, setImageSize] = useState(null);
+
+  const [labels, setLabels] = useState({});
+  
+
   useEffect(() => {
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser.");
+      setError(labels[24] || "Geolocation is not supported by your browser.");
       return;
     }
 
@@ -39,7 +43,7 @@ export default function EntryForm() {
         });
         if (permissionStatus.state === "denied") {
           setPermissionDenied(true);
-          setError("Location permission is denied. Please enable it.");
+          setError(labels[23] || "Location permission is denied. Please enable it.");
         }
         permissionStatus.onchange = () => {
           if (permissionStatus.state === "granted") {
@@ -48,7 +52,7 @@ export default function EntryForm() {
           }
         };
       } catch {
-        console.warn("Permission API might not be supported.");
+        console.warn(labels[22] || "Permission API might not be supported.");
       }
     };
 
@@ -61,7 +65,7 @@ export default function EntryForm() {
         setError(null); // Clear errors on successful fetch
       },
       (err) => {
-        setError("Unable to retrieve your location.");
+        setError(labels[8] || "Unable to retrieve your location");
         if (err.code === 1) {
           setPermissionDenied(true); // Permission denied
         }
@@ -82,15 +86,14 @@ export default function EntryForm() {
       },
       (err) => {
         if (err.code === 1) {
-          setError(
-            "Permission denied. Please enable location access in your browser settings."
+          setError(labels[18] || "Permission denied. Please enable location access in your browser settings."
           );
         } else if (err.code === 2) {
-          setError("Location unavailable. Ensure GPS is enabled.");
+          setError(labels[19] || "Location unavailable. Ensure GPS is enabled.");
         } else if (err.code === 3) {
-          setError("Request timed out. Try again.");
+          setError(labels[20] || "Request timed out. Try again.");
         } else {
-          setError("An unknown error occurred.");
+          setError(labels[21] || "An unknown error occurred.");
         }
       }
     );
@@ -142,12 +145,25 @@ export default function EntryForm() {
       };
     }
   };
+
+
   useEffect(() => {
+    const fetchLabel = async () => {
+      try {
+        const labelResponse = await axios.get(
+          `sukrtya/api/language-labels/getLabels?formId=4&regLId=${localStorage.getItem("language")}`
+        );
+        setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
+      } catch (error) {
+        console.error("Error fetching labels:", error);
+      }
+    };
+   
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
         const response = await axios.get(
-          `/sukrtya/api/questions?formId=${formId}&transActionId=${transActionId}&RegLId=${RegLId}`,
+          `/sukrtya/api/questions?formId=${formId}&transActionId=${transActionId}&RegLId=${localStorage.getItem("language")}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -158,18 +174,19 @@ export default function EntryForm() {
       } catch (error) {
         if (error.response && error.response.status === 401) {
           // Token expired, redirect to login with message
-          alert("Session expired. Please log in again.");
+          alert(labels[25] || "Session expired. Please log in again.");
           localStorage.clear();
           window.location.href = "/";
 
         } else {
-          setError("Error fetching data : " + error);
+          setError(labels[26] || "Error fetching data "+" : " + error);
           console.error("Error fetching data:", error);
         }
 
 
       }
     };
+    fetchLabel();
     fetchData();
   }, [formId, transActionId, RegLId]);
   // Apply skip logic once `answers` is populated
@@ -252,15 +269,15 @@ export default function EntryForm() {
           err.name === "NotAllowedError" ||
           err.name === "PermissionDeniedError"
         ) {
-          setError("Camera access denied by user.");
+          setError(labels[27] || "Camera access denied by user.");
           //alert("Camera access denied by user.");
           setCameraPermission("denied");
         } else if (err.name === "NotFoundError") {
-          setError("No camera found on this device.");
+          setError(labels[28] || "No camera found on this device.");
           //alert("No camera found on this device.");
           setCameraPermission("not_found");
         } else {
-          setError("Error accessing camera:" + err);
+          setError(labels[29] || "Error accessing camera:" + err);
           //alert("Error accessing camera:" + err);
           setCameraPermission("error");
         }
@@ -281,9 +298,9 @@ export default function EntryForm() {
     // Sanitize input (basic example)
     const sanitizedValue = value.replace(/<[^>]*>/g, ''); // Remove HTML tags
     // Define the allowed pattern
-  const allowedPattern = /^[a-zA-Z0-9 .,()&%@_!#$|/]*$/;
+    const allowedPattern = /^[a-zA-Z0-9 .,()&%@_!#$|/]*$/;
 
-   if (allowedPattern.test(sanitizedValue)) {
+    if (allowedPattern.test(sanitizedValue)) {
       // Update answers and clear error for the question
       setAnswers((prevAnswers) => ({
         ...prevAnswers,
@@ -296,11 +313,11 @@ export default function EntryForm() {
       }));
     } else {
       // Set an error for the specific question
-    setErrors((prevErrors) => ({
-      ...prevErrors,
-      [questionId]: 'Invalid input detected!',
-    }));
- 
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [questionId]: 'Invalid input detected!',
+      }));
+
     }
 
 
@@ -530,7 +547,7 @@ export default function EntryForm() {
             },
           });
         if (responses.data.status === "success") {
-          alert("Form submitted successfully");
+          alert(labels[14] || "Form submitted successfully");
           navigate("/facility-trans", { state: { object: serializedObject } });
           setLoading(false); // stop loading
         } else {
@@ -541,12 +558,12 @@ export default function EntryForm() {
       catch (error) {
         if (error.response && error.response.status === 401) {
           // Token expired, redirect to login with message
-          alert("Session expired. Please log in again.");
+          alert(labels[25] || "Session expired. Please log in again.");
           localStorage.clear();
           window.location.href = "/";
 
         } else {
-          console.error("Error fetching data:", error);
+          console.error(labels[26] || "Error fetching data:", error);
           setLoading(false); // stop loading
         }
       }
@@ -575,12 +592,12 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                {questionId} - {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
               </label>
-         
+
               <select
                 ref={(el) => (inputRefs.current[questionId] = el)}
                 className={`text-primary form-control form-select ${errors[questionId] ? "is-invalid" : ""
@@ -594,7 +611,7 @@ export default function EntryForm() {
                     {option.text}
                   </option>
                 ))}
-              </select> 
+              </select>
               {errors[questionId] && (
                 <p className="invalid-feedback">{errors[questionId]}</p>
               )}
@@ -607,7 +624,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                {questionId} - {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -642,7 +659,7 @@ export default function EntryForm() {
                       onClick={() => handleRotate(questionId)}
                       className="btn btn-outline-primary btn-icon-text me-2 mr-2 ml-2"
                     >
-                      <i className="ti-loop btn-icon-prepend"></i> Rotate Image
+                      <i className="ti-loop btn-icon-prepend"></i> {labels[6] || "Rotate Image"}
                     </button>
                   )}
                   <button
@@ -650,7 +667,7 @@ export default function EntryForm() {
                     type="button"
                     className="btn btn-outline-success btn-icon-text mr-2 ml-2"
                   >
-                    <i className="ti-camera btn-icon-prepend"></i> Capture Image
+                    <i className="ti-camera btn-icon-prepend"></i> {labels[2] || "Capture Image"}
                   </button>
 
                   {errors[questionId] && (
@@ -667,7 +684,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                {questionId} -  {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -705,7 +722,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label>
-                {questionId} -  {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -748,7 +765,7 @@ export default function EntryForm() {
             <div className="row ">
               <div className="col-md-12">
                 <h3 className="font-weight-bold text-capitalize">
-                  Welcome,{" "}
+                  {labels[1] || "Welcome"},{" "}
                   <span className="text-success">
                     {localStorage.getItem("profileName")}
                   </span>
@@ -786,7 +803,7 @@ export default function EntryForm() {
                           textDecoration: "underline",
                         }}
                       >
-                        Click here to allow location
+                        {labels[9] || "Click here to allow location"}
                       </button>
                     </div>
                   </div>
@@ -811,10 +828,10 @@ export default function EntryForm() {
                           type="button"
                           onClick={handleSubmit}
                         >
-                          {loading ? "Please Wait..." : "Submit"}
+                          {loading ? labels[15] || "Please Wait..." : labels[7] || "Submit"}
                         </button>
                       ) : (
-                        <p>Fetching location...</p>
+                        <p> {labels[17] || "Fetching location..."}</p>
                       )}
                     </div>
 
@@ -855,11 +872,11 @@ export default function EntryForm() {
                                     <div className="facing-mode-container">
                                       {facingMode === "user" ? (
                                         <span style={{ paddingLeft: "20px" }}>
-                                          Back Camera
+                                          {labels[3] || "Back Camera"}
                                         </span>
                                       ) : (
                                         <span style={{ paddingRight: "40px" }}>
-                                          Front Camera
+                                          {labels[16] || "Front Camera"}
                                         </span>
                                       )}
                                     </div>
@@ -875,7 +892,7 @@ export default function EntryForm() {
                                   className="btn btn-outline-dark"
                                   onClick={() => setShowCameraModal(false)}
                                 >
-                                  Close
+                                  {labels[4] || "Close"}
                                 </button>
 
                                 <button
@@ -884,7 +901,7 @@ export default function EntryForm() {
                                   className="btn btn-success btn-icon-text "
                                 >
                                   <i className="ti-camera btn-icon-prepend"></i>{" "}
-                                  Capture
+                                  {labels[5] || "Capture"}
                                 </button>
                               </div>
                             </>
@@ -895,9 +912,9 @@ export default function EntryForm() {
                                 src="./images/camera-off-icon.png"
                               />
                               <h3 className="text-danger">
-                                Camera access is denied.
+                                {labels[10] || "Camera access is denied."}
                               </h3>
-                              <p>Please allow camera access</p>
+                              <p> {labels[11] || "Please allow camera access"}</p>
                               {error && <p style={{ color: "red" }}>{error}</p>}
                               <button
                                 onClick={requestCameraAccess}
@@ -907,7 +924,7 @@ export default function EntryForm() {
                                 }}
                                 className="btn btn-link mb-5"
                               >
-                                Click here to allow camera permission
+                                {labels[12] || "Click here to allow camera permission"}
                               </button>
 
                               <div
@@ -920,7 +937,7 @@ export default function EntryForm() {
                                   onClick={() => setShowCameraModal(false)}
                                   aria-label="Close"
                                 >
-                                  Close
+                                  {labels[4] || "Close"}
                                 </button>
                               </div>
                             </div>

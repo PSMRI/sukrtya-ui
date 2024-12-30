@@ -11,13 +11,28 @@ export default function Dashboard() {
 
 
   const [data, setData] = useState([]);
+  const [labels, setLabels] = useState({});
+
+  useEffect(() => {
+    const fetchLabel = async () => {
+      try {
+        const labelResponse = await axios.get(
+          `sukrtya/api/language-labels/getLabels?formId=2&regLId=${localStorage.getItem("language")}`
+        );
+        setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
+      } catch (error) {
+        console.error("Error fetching labels:", error);
+      }
+    };
+    fetchLabel();
+  }, []);
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
 
         const response = await axios.get(
-          `/sukrtya/api/facilities?UserId=${userId}&RegLid=${regLid}&MappingUserId=${mappingUserId}`,
+          `/sukrtya/api/facilities?UserId=${userId}&RegLid=${localStorage.getItem("language")}&MappingUserId=${mappingUserId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -26,6 +41,9 @@ export default function Dashboard() {
         );
 
         setData(response.data);
+
+
+
       } catch (error) {
         if (error.response && error.response.status === 401) {
           // Token expired, redirect to login with message
@@ -57,7 +75,7 @@ export default function Dashboard() {
               <div className="row">
                 <div className="col-md-4">
                   <h3 className="font-weight-bold text-capitalize">
-                    Welcome,
+                  {labels[4] || "Welcome"},
                     <span className="text-success">
                       {localStorage.getItem("profileName")}
                     </span>
@@ -80,7 +98,7 @@ export default function Dashboard() {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="type here to search.."
+                      placeholder={labels[2] || "type here to search.."}
                     />
                   </div>
                 </div>
@@ -98,7 +116,7 @@ export default function Dashboard() {
                           style={{ height: "70px", width: "70px" }}
                         />
                         <div style={{ textAlign: "right" }}>
-                          Facility Name : <strong> {item.facilityName}</strong>
+                        {labels[5] || "Facility Name"}  : <strong> {item.facilityName}</strong>
                           <br />
                           <small>NIN No. : {item.facilityNin}</small>
                         </div>
@@ -107,28 +125,28 @@ export default function Dashboard() {
                         <table>
                           <tbody>
                             <tr>
-                              <td>State</td>
+                              <td>{labels[6] || "State"} </td>
                               <td style={{ width: "20px" }}>:</td>
                               <td>
                                 <strong>{item.state}</strong>
                               </td>
                             </tr>
                             <tr>
-                              <td>District</td>
+                              <td>{labels[7] || "District"}</td>
                               <td style={{ width: "20px" }}>:</td>
                               <td>
                                 <strong>{item.districtName}</strong>
                               </td>
                             </tr>
                             <tr>
-                              <td>Block</td>
+                              <td>{labels[8] || "Block"}</td>
                               <td style={{ width: "20px" }}>:</td>
                               <td>
                                 <strong>{item.blockName}</strong>
                               </td>
                             </tr>
                             <tr>
-                              <td>Facility Type</td>
+                              <td>{labels[9] || "Facility Name"}</td>
                               <td style={{ width: "20px" }}>:</td>
                               <td>
                                 <strong>{item.facilityTypeCode}</strong>
@@ -144,7 +162,7 @@ export default function Dashboard() {
                           onClick={() => handleSubmit(item)}
                           className="btn btn-primary mr-2"
                         >
-                          {loading ? "Please Wait..." : "Select"}
+                          {loading ? "Please Wait..." : labels[3] || "Select"}
                         </button>
                       </div>
                     </div>
