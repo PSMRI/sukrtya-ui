@@ -22,6 +22,6 @@ COPY --from=builder /build/node_modules node_modules/
 COPY --from=builder /build/package.json package.json
 COPY --from=builder /build/package-lock.json package-lock.json
 COPY --from=builder /build/build ./public/
-COPY --from=builder /build/build ./src/
+COPY --from=builder /build/scr scr
 
 CMD [ "npm","start" ]
