@@ -2,7 +2,7 @@
 FROM node:20.17.0-alpine AS builder
 
 # Set the working directory in the container
-WORKDIR /build
+#WORKDIR /build
 
 # Copy the JAR file to the container
 COPY package.json package.json
