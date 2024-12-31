@@ -1,31 +1,26 @@
-# Use Node.js image for the build stage
+# Use an official OpenJDK runtime as a parent image
 FROM node:20.17.0-alpine AS builder
- 
-# Set the working directory
+
+# Set the working directory in the container
 WORKDIR /build
- 
-# Copy only the package files first to leverage caching
-COPY package.json package-lock.json ./
- 
-# Install dependencies
-RUN npm i
- 
-# Copy the rest of the application code
+
+# Copy the JAR file to the container
+COPY package.json package.json
+COPY package-lock.json package-lock.json
+
+RUN npm install -g npm@11.0.0
+
 COPY . .
- 
-# Build the application
+
 RUN npm run build
- 
-# Use a smaller image for the runtime stage
+
 FROM node:20.17.0-alpine AS runner
- 
-# Set the working directory
+
 WORKDIR /app
- 
-# Copy only the necessary files from the builder stage
-COPY --from=builder /build/node_modules ./node_modules/
-COPY --from=builder /build/package.json ./package.json
+
+COPY --from=builder /build/node_modules node_modules/
+COPY --from=builder /build/package.json package.json
+COPY --from=builder /build/package-lock.json package-lock.json
 COPY --from=builder /build/build ./build/
- 
-# Define the command to run the application
-CMD ["npm", "start"]
+
+CMD [ "npm","start" ]
