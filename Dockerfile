@@ -21,7 +21,7 @@ COPY ./package-lock.json /app
 
 
 
-RUN npm install
+RUN npm install -g npm@11.0.0
 
 
 
