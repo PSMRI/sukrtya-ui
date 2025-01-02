@@ -24,7 +24,7 @@ export default function EntryForm() {
   const [address, setAddress] = useState("");
   const [error, setError] = useState(null);
   const [hiddenQuestions, setHiddenQuestions] = useState(new Set());
-  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(true);
   const [imageSize, setImageSize] = useState(null);
 
   const [labels, setLabels] = useState({});
@@ -831,7 +831,12 @@ export default function EntryForm() {
                           {loading ? labels[15] || "Please Wait..." : labels[7] || "Submit"}
                         </button>
                       ) : (
-                        <p> {labels[17] || "Fetching location..."}</p>
+                        <>
+                        <img
+                          style={{ height: "50px", width: "50px" }}
+                          src="./images/loading.gif"
+                        />
+                        <p> {labels[17] || "Fetching location..."}</p></>
                       )}
                     </div>
 
