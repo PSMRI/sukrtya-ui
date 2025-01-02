@@ -28,7 +28,7 @@ export default function EntryForm() {
   const [imageSize, setImageSize] = useState(null);
 
   const [labels, setLabels] = useState({});
-  
+
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -158,7 +158,7 @@ export default function EntryForm() {
         console.error("Error fetching labels:", error);
       }
     };
-   
+
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
@@ -179,7 +179,7 @@ export default function EntryForm() {
           window.location.href = "/";
 
         } else {
-          setError(labels[26] || "Error fetching data "+" : " + error);
+          setError(labels[26] || "Error fetching data " + " : " + error);
           console.error("Error fetching data:", error);
         }
 
@@ -297,8 +297,8 @@ export default function EntryForm() {
   const handleInputChange = (questionId, value) => {
     // Sanitize input (basic example)
     const sanitizedValue = value.replace(/<[^>]*>/g, ''); // Remove HTML tags
-    // Define the allowed pattern
-    const allowedPattern = /^[a-zA-Z0-9 .,()&%@_!#$|/]*$/;
+   // Define the allowed pattern (disallow *, <, and >)
+    const allowedPattern = /^[^*<>]*$/;
 
     if (allowedPattern.test(sanitizedValue)) {
       // Update answers and clear error for the question
@@ -315,9 +315,8 @@ export default function EntryForm() {
       // Set an error for the specific question
       setErrors((prevErrors) => ({
         ...prevErrors,
-        [questionId]: 'Invalid input detected!',
+        [questionId]: localStorage.getItem("language") === "1" ? 'Invalid input detected! Only *, <, and > are not allowed.' : 'अमान्य इनपुट पाया गया! केवल *, <, और > की अनुमति नहीं है।',
       }));
-
     }
 
 
@@ -451,7 +450,7 @@ export default function EntryForm() {
         !hiddenQuestions.has(questionId) &&
         !answers[questionId]
       ) {
-        newErrors[questionId] = "This field is required.";
+        newErrors[questionId] = localStorage.getItem("language") === "1" ? "This field is required." : "यह फ़ील्ड आवश्यक है";
         if (!firstInvalidField) firstInvalidField = questionId;
       }
 
@@ -467,7 +466,7 @@ export default function EntryForm() {
         if (maxvalue && numericValue > maxvalue) {
           newErrors[
             questionId
-          ] = `${questionName} number is more than ${maxvalue}`;
+          ] =  localStorage.getItem("language") === "1" ? `${questionName} number is more than ${maxvalue}` : `${questionName} ${maxvalue} से अधिक है ` ;
           if (!firstInvalidField) firstInvalidField = questionId;
         }
       }
@@ -605,7 +604,8 @@ export default function EntryForm() {
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
               >
-                <option value="">Select an option</option>
+                {localStorage.getItem("language") === "1" ? <option value="">Select an option</option> : <option value="">एक विकल्प चुनें</option>}
+
                 {questionOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.text}
