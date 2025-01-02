@@ -1,27 +1,35 @@
-# Use an official OpenJDK runtime as a parent image
-FROM node:20.17.0-alpine AS builder
+# Fetching the latest node image on alpine linux
 
-# Set the working directory in the container
-WORKDIR /build
+FROM node:20.17.0-alpine  AS development
 
-# Copy the JAR file to the container
-COPY package.json package.json
-COPY package-lock.json package-lock.json
 
-RUN npm install -g npm@11.0.0
 
-COPY . .
 
-RUN npm run build
 
-FROM node:20.17.0-alpine AS runner
+
+
+# Setting up the work directory
 
 WORKDIR /app
 
-COPY --from=builder /build/node_modules node_modules/
-COPY --from=builder /build/package.json package.json
-COPY --from=builder /build/package-lock.json package-lock.json
-COPY --from=builder /build/build ./public/
-COPY --from=builder /build/src ./src/
 
-CMD [ "npm","start" ]
+
+# Installing dependencies
+
+COPY ./package*.json /app
+
+
+
+RUN npm install
+
+
+
+# Copying all the files in our project
+
+COPY . .
+
+
+
+# Starting our application
+
+CMD ["npm","start"]
