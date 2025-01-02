@@ -16,7 +16,8 @@ WORKDIR /app
 
 # Installing dependencies
 
-COPY ./package*.json /app
+COPY ./package.json /app
+COPY ./package-lock.json /app
 
 
 
