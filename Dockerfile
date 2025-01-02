@@ -19,9 +19,7 @@ RUN npm install -g npm@11.0.0
 
 COPY . .
 
-RUN npm run build
- 
-FROM node:20.17.0-alpine AS runner
+
 
 # Starting our application
 
