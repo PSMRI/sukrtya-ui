@@ -24,7 +24,7 @@ export default function EntryForm() {
   const [address, setAddress] = useState("");
   const [error, setError] = useState(null);
   const [hiddenQuestions, setHiddenQuestions] = useState(new Set());
-  const [permissionDenied, setPermissionDenied] = useState(true);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [imageSize, setImageSize] = useState(null);
 
   const [labels, setLabels] = useState({});
@@ -450,7 +450,7 @@ export default function EntryForm() {
         !hiddenQuestions.has(questionId) &&
         !answers[questionId]
       ) {
-        newErrors[questionId] = localStorage.getItem("language") === "1" ? "This field is required." : "यह फ़ील्ड आवश्यक है";
+        newErrors[questionId] = localStorage.getItem("language") === "1" ? "This field is required." : "यह फ़ील्ड आवश्यक है।";
         if (!firstInvalidField) firstInvalidField = questionId;
       }
 
@@ -460,13 +460,13 @@ export default function EntryForm() {
         if (minvalue && numericValue < minvalue) {
           newErrors[
             questionId
-          ] = `${questionName} number should be at least ${minvalue}`;
+          ] = localStorage.getItem("language") === "1" ? `Please enter a number should be at least ${minvalue}` : `कृपया संख्या कम से कम ${minvalue} दर्ज करें। `;
           if (!firstInvalidField) firstInvalidField = questionId;
         }
         if (maxvalue && numericValue > maxvalue) {
           newErrors[
             questionId
-          ] =  localStorage.getItem("language") === "1" ? `${questionName} number is more than ${maxvalue}` : `${questionName} ${maxvalue} से अधिक है ` ;
+          ] =  localStorage.getItem("language") === "1" ? `Please enter less than ${maxvalue}` : `कृपया ${maxvalue} से कम दर्ज करें। ` ;
           if (!firstInvalidField) firstInvalidField = questionId;
         }
       }
@@ -783,8 +783,8 @@ export default function EntryForm() {
                 <HeadingData heading={myObject} />
               </div>
             </div>
-
-            {permissionDenied ? (
+ 
+            {(permissionDenied) ? (
               <div className="row mt-4">
                 <div className="row-md-4"></div>
                 <div className="row-md-4">
