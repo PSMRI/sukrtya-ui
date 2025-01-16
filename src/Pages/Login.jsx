@@ -54,12 +54,14 @@ export default function Login() {
       }
 
       if (isMounted) {
+        
         // Update state only if the component is still mounted
         localStorage.setItem("authToken", response.data.token);
         localStorage.setItem("userID", userID);
         localStorage.setItem("profileName", profileName);
         localStorage.setItem("username", userName);
         localStorage.setItem("language",  formData.language);
+        localStorage.setItem("isApprover", response.data.user.approvalStatus);
         //alert("Welcome - " + profileName);
         navigate("/dashboard", {
           state: { userId: userID, regLid: formData.language, mappingUserId: userID },

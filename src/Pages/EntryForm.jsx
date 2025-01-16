@@ -15,7 +15,7 @@ export default function EntryForm() {
   const navigate = useNavigate();
 
   const location = useLocation();
-  const { formId, transActionId, RegLId, user } = location.state;
+  const { formId, transActionId, RegLId, user, approvalStatus, lat, lon, gaddress } = location.state;
   const serializedObject = location.state?.object;
   const myObject = JSON.parse(serializedObject);
   const [facingMode, setFacingMode] = useState("user"); // Default to front camera
@@ -29,30 +29,31 @@ export default function EntryForm() {
 
   const [labels, setLabels] = useState({});
 
-
   useEffect(() => {
     if (!navigator.geolocation) {
-      setError(labels[24] || "Geolocation is not supported by your browser.");
+      setError(labels.geolocationNotSupported || "Geolocation is not supported by your browser.");
       return;
     }
 
     const handleLocationPermission = async () => {
       try {
-        const permissionStatus = await navigator.permissions.query({
-          name: "geolocation",
-        });
+        const permissionStatus = await navigator.permissions.query({ name: "geolocation" });
         if (permissionStatus.state === "denied") {
           setPermissionDenied(true);
-          setError(labels[23] || "Location permission is denied. Please enable it.");
+          setError(labels.permissionDenied || "Location permission is denied. Please enable it.");
         }
+
         permissionStatus.onchange = () => {
           if (permissionStatus.state === "granted") {
             setPermissionDenied(false);
             setError(null);
+          } else if (permissionStatus.state === "denied") {
+            setPermissionDenied(true);
+            setError(labels.permissionDenied || "Location permission is denied. Please enable it.");
           }
         };
       } catch {
-        console.warn(labels[22] || "Permission API might not be supported.");
+        console.warn(labels.permissionApiUnsupported || "Permission API might not be supported.");
       }
     };
 
@@ -62,19 +63,30 @@ export default function EntryForm() {
       (position) => {
         setLatitude(position.coords.latitude);
         setLongitude(position.coords.longitude);
-        setError(null); // Clear errors on successful fetch
+        setError(null); // Clear errors on success
       },
-      (err) => {
-        setError(labels[8] || "Unable to retrieve your location");
-        if (err.code === 1) {
-          setPermissionDenied(true); // Permission denied
-        }
-      }
+      (err) => handleLocationError(err)
     );
 
-    // Cleanup on component unmount
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  }, [labels]);
+
+  const handleLocationError = (err) => {
+    switch (err.code) {
+      case 1:
+        setPermissionDenied(true);
+        setError(labels.permissionDenied || "Permission denied. Please enable location access in your browser settings.");
+        break;
+      case 2:
+        setError(labels.locationUnavailable || "Location unavailable. Ensure GPS is enabled.");
+        break;
+      case 3:
+        setError(labels.requestTimedOut || "Request timed out. Try again.");
+        break;
+      default:
+        setError(labels.unknownError || "An unknown error occurred.");
+    }
+  };
 
   const requestLocationAccess = () => {
     navigator.geolocation.getCurrentPosition(
@@ -84,20 +96,10 @@ export default function EntryForm() {
         setError(null);
         setPermissionDenied(false);
       },
-      (err) => {
-        if (err.code === 1) {
-          setError(labels[18] || "Permission denied. Please enable location access in your browser settings."
-          );
-        } else if (err.code === 2) {
-          setError(labels[19] || "Location unavailable. Ensure GPS is enabled.");
-        } else if (err.code === 3) {
-          setError(labels[20] || "Request timed out. Try again.");
-        } else {
-          setError(labels[21] || "An unknown error occurred.");
-        }
-      }
+      (err) => handleLocationError(err)
     );
   };
+
 
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [currentCameraQuestion, setCurrentCameraQuestion] = useState(null); // Store current question object
@@ -148,6 +150,7 @@ export default function EntryForm() {
 
 
   useEffect(() => {
+
     const fetchLabel = async () => {
       try {
         const labelResponse = await axios.get(
@@ -188,7 +191,7 @@ export default function EntryForm() {
     };
     fetchLabel();
     fetchData();
-  }, [formId, transActionId, RegLId]);
+  }, [formId, transActionId, RegLId, approvalStatus, lat, lon, gaddress]);
   // Apply skip logic once `answers` is populated
   useEffect(() => {
     if (Object.keys(answers).length === 0) return;
@@ -297,7 +300,7 @@ export default function EntryForm() {
   const handleInputChange = (questionId, value) => {
     // Sanitize input (basic example)
     const sanitizedValue = value.replace(/<[^>]*>/g, ''); // Remove HTML tags
-   // Define the allowed pattern (disallow *, <, and >)
+    // Define the allowed pattern (disallow *, <, and >)
     const allowedPattern = /^[^*<>]*$/;
 
     if (allowedPattern.test(sanitizedValue)) {
@@ -466,7 +469,7 @@ export default function EntryForm() {
         if (maxvalue && numericValue > maxvalue) {
           newErrors[
             questionId
-          ] =  localStorage.getItem("language") === "1" ? `Please enter less than ${maxvalue}` : `कृपया ${maxvalue} से कम दर्ज करें। ` ;
+          ] = localStorage.getItem("language") === "1" ? `Please enter less than ${maxvalue}` : `कृपया ${maxvalue} से कम दर्ज करें। `;
           if (!firstInvalidField) firstInvalidField = questionId;
         }
       }
@@ -515,63 +518,205 @@ export default function EntryForm() {
       fetchAddress();
     }
   }, [latitude, longitude, apiKey]);
+
+  const fetchData = async (url, method, data, token) => {
+    try {
+      const response = await axios({
+        url,
+        method,
+        data,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const constructPostAnswers = (answers, questions) =>
+    Object.entries(answers)
+      .map(([questionId, value]) => ({
+        questionId: parseInt(questionId),
+        questionType: questions.find((q) => q.questionId === parseInt(questionId))?.questionType,
+        answer: value,
+      }))
+      .filter((item) => item.answer);
+
   const handleSubmit = async () => {
-    setLoading(true); // Start loading
+    setLoading(true);
+
     if (validateForm()) {
+      const token = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userID");
+      const profileName = localStorage.getItem("profileName");
+
+      const postData = {
+        transactionId: transActionId,
+        userId:user,
+        formId,
+        facilityNIN: myObject.facilityNin,
+        postAnswer: constructPostAnswers(answers, questions),
+      };
+
+      if (localStorage.getItem("isApprover") == "0") {
+        Object.assign(postData, { latitude, longitude, googleAddress: address });
+      } else {
+        Object.assign(postData, { latitude: lat, longitude: lon, googleAddress: gaddress });
+      }
+
       try {
-        const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
-        const responses = await axios.post(
+        const saveResponse = await fetchData(
           "/sukrtya/api/assessments/save",
-          {
-            transactionId: transActionId,
-            latitude: latitude,
-            longitude: longitude,
-            googleAddress: address,
-            userId: localStorage.getItem("userID"),
-            formId: formId,
-            facilityNIN: myObject.facilityNin,
-            postAnswer: Object.entries(answers)
-              .map(([questionId, value]) => ({
-                questionId: parseInt(questionId),
-                questionType: questions.find(
-                  (q) => q.questionId === parseInt(questionId)
-                ).questionType,
-                answer: value,
-              }))
-              .filter((item) => item.answer),
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`, // Pass token in the Authorization header
+          "post",
+          postData,
+          token
+        );
+
+        if (localStorage.getItem("isApprover") == "0") {
+          await fetchData(
+            "/sukrtya/api/form-approval/AuditTrail",
+            "post",
+            {
+              actionId: 1,
+              description: `Update by ${profileName}`,
+              createdBy: userId,
+              transactionId: transActionId,
             },
-          });
-        if (responses.data.status === "success") {
+            token
+          );
+        }
+
+        if (saveResponse.data.status === "success") {
           alert(labels[14] || "Form submitted successfully");
           navigate("/facility-trans", { state: { object: serializedObject } });
-          setLoading(false); // stop loading
         } else {
-          alert(responses.data.status + " - " + responses.data.message);
-          setLoading(false); // stop loading
+          alert(`${saveResponse.data.status} - ${saveResponse.data.message}`);
         }
+      } catch (error) {
+        handleErrors(error);
+      } finally {
+        setLoading(false);
       }
-      catch (error) {
-        if (error.response && error.response.status === 401) {
-          // Token expired, redirect to login with message
-          alert(labels[25] || "Session expired. Please log in again.");
-          localStorage.clear();
-          window.location.href = "/";
-
-        } else {
-          console.error(labels[26] || "Error fetching data:", error);
-          setLoading(false); // stop loading
-        }
-      }
-
-
-
     }
-    setLoading(false);
   };
+
+  const handleApproval = async () => {
+    setLoading(true);
+
+    if (window.confirm( labels[35] || "I have confirmed the correctness and authenticity of the data and photos given, and I hereby approve.")) {
+      const token = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userID");
+      const profileName = localStorage.getItem("profileName");
+
+      const postData = {
+        transactionId: transActionId,
+        userId:user,
+        formId,
+        facilityNIN: myObject.facilityNin,
+        postAnswer: constructPostAnswers(answers, questions),
+      };
+
+      if (localStorage.getItem("isApprover") == "0") {
+        Object.assign(postData, { latitude, longitude, googleAddress: address });
+      } else {
+        Object.assign(postData, { latitude: lat, longitude: lon, googleAddress: gaddress });
+      }
+
+      try {
+        const saveResponse = await fetchData(
+          "/sukrtya/api/assessments/save",
+          "post",
+          postData,
+          token
+        );
+
+        await fetchData(
+          "/sukrtya/api/form-approval/update",
+          "put",
+          {
+            userId:userId,
+            approvalStatus: 2,
+            formId,
+            transactionId: transActionId,
+          },
+          token
+        );
+
+        await fetchData(
+          "/sukrtya/api/form-approval/AuditTrail",
+          "post",
+          {
+            actionId: 2,
+            description: `Approved by ${profileName}`,
+            createdBy: userId,
+            transactionId: transActionId,
+          },
+          token
+        );
+
+        alert("Approved successfully");
+        navigate("/facility-trans", { state: { object: serializedObject } });
+      } catch (error) {
+        handleErrors(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleRevoke = async () => {
+    setLoading(true);
+
+    if (window.confirm( labels[36] || "Are you sure you want to revoke the approval?")) {
+      const token = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userID");
+      const profileName = localStorage.getItem("profileName");
+
+      try {
+        await fetchData(
+          "/sukrtya/api/form-approval/update",
+          "put",
+          {
+            userId:userId,
+            approvalStatus: 0,
+            formId,
+            transactionId: transActionId,
+          },
+          token
+        );
+
+        await fetchData(
+          "/sukrtya/api/form-approval/AuditTrail",
+          "post",
+          {
+            actionId: 4,
+            description: `Revoked by ${profileName}`,
+            createdBy: userId,
+            transactionId: transActionId,
+          },
+          token
+        );
+
+        alert(labels[37] || "Revoked successfully");
+        navigate("/facility-trans", { state: { object: serializedObject } });
+      } catch (error) {
+        handleErrors(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleErrors = (error) => {
+    if (error.response?.status === 401) {
+      alert(labels[25] || "Session expired. Please log in again.");
+      localStorage.clear();
+      window.location.href = "/";
+    } else {
+      console.error(labels[26] || "Error fetching data:", error);
+    }
+  };
+
   const renderQuestion = (question) => {
     const {
       questionId,
@@ -783,7 +928,7 @@ export default function EntryForm() {
                 <HeadingData heading={myObject} />
               </div>
             </div>
- 
+
             {(permissionDenied) ? (
               <div className="row mt-4">
                 <div className="row-md-4"></div>
@@ -820,23 +965,68 @@ export default function EntryForm() {
                         .map((question) => renderQuestion(question))}
                     </div>
                     <div className="">
-                      {latitude && longitude ? (
-                        <button
-                          style={{ width: "200px" }}
-                          disabled={loading}
-                          className="btn btn-primary mr-2"
-                          type="button"
-                          onClick={handleSubmit}
-                        >
-                          {loading ? labels[15] || "Please Wait..." : labels[7] || "Submit"}
-                        </button>
-                      ) : (
+
+                      {transActionId != null && approvalStatus == "2" && localStorage.getItem("isApprover") == "0" && (
+                        <h6> <strong className="text-success">{labels[34] || "The data has been approved. To update the record, request an admin to revoke the approval."}</strong></h6>
+                      )}
+
+
+                      {latitude && longitude ? (<>
+                        <p> <strong>{labels[33] || "Your Current Location Details"} :</strong> </p>
+                        <p>Latitude: {latitude}, Longitude: {longitude}<br />Full Address: {address}</p>
+
+                        {transActionId == null && (
+                          <button
+                            style={{ width: "200px" }}
+                            disabled={loading}
+                            className="btn btn-primary mr-2"
+                            type="button"
+                            onClick={handleSubmit}
+                          >
+                            {loading ? labels[15] || "Please Wait..." : labels[7] || "Submit"}
+                          </button>
+                        )}
+                        {transActionId != null && approvalStatus != "2" && (
+                          <button
+                            style={{ width: "150px" }}
+                            className="btn btn-warning mr-2"
+                            type="button"
+                            disabled={loading}
+                            onClick={handleSubmit}
+                          >
+                           {labels[30] || "Update"}
+                          </button>
+                        )}
+
+                        {localStorage.getItem("isApprover") == "2" && transActionId != null && approvalStatus != "2" && (
+                          <button
+                            style={{ width: "150px" }}
+                            className="btn btn-success mr-2"
+                            type="button"
+                            disabled={loading}
+                            onClick={handleApproval}
+                          >
+                          {labels[31] || "Approve"} 
+                          </button>
+                        )}
+                        {localStorage.getItem("isApprover") == "2" && approvalStatus == "2" && (
+                          <button
+                            style={{ width: "200px" }}
+                            className="btn btn-danger mr-2"
+                            type="button"
+                            disabled={loading}
+                            onClick={handleRevoke}
+                          >
+                          {labels[32] || "Revoke"}   
+                          </button>
+                        )}
+                      </>) : (
                         <>
-                        <img
-                          style={{ height: "50px", width: "50px" }}
-                          src="./images/loading.gif"
-                        />
-                        <p> {labels[17] || "Fetching location..."}</p></>
+                          <img
+                            style={{ height: "50px", width: "50px" }}
+                            src="./images/loading.gif"
+                          />
+                          <p> {labels[17] || "Fetching location..."}</p></>
                       )}
                     </div>
 

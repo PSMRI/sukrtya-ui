@@ -9,7 +9,7 @@ export default function Dashboard() {
   const { userId, regLid, mappingUserId } = location.state;
   const [loading, setLoading] = useState(false); // Loading state
 
-
+  const [searchText, setSearchText] = useState("");
   const [data, setData] = useState([]);
   const [labels, setLabels] = useState({});
 
@@ -66,6 +66,15 @@ export default function Dashboard() {
     navigate("/facility-trans", { state: { object: serializedObject } });
     setLoading(false);
   };
+
+  // Filter logic to match search text
+  const filteredData = data.filter((item) =>
+    Object.values(item).some(
+      (value) =>
+        typeof value === "string" &&
+        value.toLowerCase().includes(searchText.toLowerCase())
+    )
+  );
   return (
     <>
       <Base title="Dashboard">
@@ -75,7 +84,7 @@ export default function Dashboard() {
               <div className="row">
                 <div className="col-md-4">
                   <h3 className="font-weight-bold text-capitalize">
-                  {labels[4] || "Welcome"},
+                    {labels[4] || "Welcome"},
                     <span className="text-success">
                       {localStorage.getItem("profileName")}
                     </span>
@@ -97,26 +106,33 @@ export default function Dashboard() {
                     </div>
                     <input
                       type="text"
-                      className="form-control"
+                      className="form-control" value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
                       placeholder={labels[2] || "type here to search.."}
                     />
                   </div>
+                <p className="text-right">  <small >
+                {filteredData.length > 0
+                  ? `Found ${filteredData.length} item(s)`
+                  : "No items found"}
+              </small></p>
                 </div>
               </div>
-
+              
               <div className="row mt-5">
-                {data.map((item, index) => (
+             
+                {filteredData.map((item, index) => (
                   <div className="col-md-4 mb-4" key={index}>
-                    <div className="card tale-bg">
+                    <div className="card shadow">
                       <nav className="navbar">
                         <img
-                          className="img-thumbnail"
+                          className="img-responsive"
                           src={`https://aphcsukrtya.shsbihar.in/${item.facilityPhoto}`}
                           alt="image"
                           style={{ height: "70px", width: "70px" }}
                         />
                         <div style={{ textAlign: "right" }}>
-                        {labels[5] || "Facility Name"}  : <strong> {item.facilityName}</strong>
+                          {labels[5] || "Facility Name"}  : <strong> {item.facilityName}</strong>
                           <br />
                           <small>NIN No. : {item.facilityNin}</small>
                         </div>

@@ -30,16 +30,29 @@ export default function NavBar() {
       state: { userId: localStorage.getItem("userID"), regLid: 1, mappingUserId: localStorage.getItem("userID") },
     });
   };
+
+  const handleLanguageChange = () => {
+    const newLanguage = localStorage.getItem("language") === "1" ? "2" : "1";
+    localStorage.setItem("language", newLanguage);
+    window.location.reload();
+  };
   return (
     <>
       <nav className="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row  bg-white">
         <div className="text-center navbar-brand-wrapper ">
-       
-          <img src="logo.png" alt="logo" style={{ height: "60px" }} onClick={handleDashboard} title="click to go to dashboard" /> 
+
+          <img src="logo.png" alt="logo" style={{ height: "60px" }} onClick={handleDashboard} title="click to go to dashboard" />
         </div>
         <div className="navbar-menu-wrapper d-flex align-items-center justify-content-end">
           <ul className="navbar-nav navbar-nav-right">
             <li className="nav-item dropdown">
+              <button
+                className="btn btn-sm btn-warning text-white" onClick={handleLanguageChange}
+              >
+                English / हिंदी
+              </button>
+            </li>
+            {/* <li className="nav-item dropdown">
               <a
                 className="nav-link count-indicator dropdown-toggle"
                 id="notificationDropdown"
@@ -72,7 +85,7 @@ export default function NavBar() {
                   </div>
                 </a>
               </div>
-            </li>
+            </li> */}
             <li className="nav-item nav-profile dropdown">
               <a
                 className="nav-link dropdown-toggle"
@@ -88,7 +101,7 @@ export default function NavBar() {
               >
                 <Link to="/change-password" className="dropdown-item">
                   <i className="ti-key text-primary"></i>
-                 {labels[1] || "Change Password"}
+                  {labels[1] || "Change Password"}
                 </Link>
 
                 <Link to="/profile" className="dropdown-item">
@@ -99,7 +112,7 @@ export default function NavBar() {
 
                 <a className="dropdown-item" onClick={handleLogout}>
                   <i className="ti-power-off text-danger"></i>
-                 <span className="text-danger"> {labels[3] || "Logout"}</span>
+                  <span className="text-danger"> {labels[3] || "Logout"}</span>
                 </a>
               </div>
             </li>
