@@ -1,8 +1,37 @@
 import axios from "axios";
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function HeadingData(props) {
+  const logoStyle = {
+    width: "100px",
+    height: "100px",
+    marginRight: "20px",
+    objectFit: "cover", // Ensures the image fits nicely
+    borderRadius: "50%", // Optional: Makes the image circular
+  };
+
+  const containerStyle = {
+    display: "flex",
+    alignItems: "center",
+    fontFamily: "Arial, sans-serif",
+    padding: "20px",
+    backgroundColor: "#f0f0f0",
+    borderRadius: "8px",
+  };
+
+  const headingStyle = {
+    display: "flex",
+    flexDirection: "column",
+  };
+
+  const detailStyle = {
+    fontSize: "16px",
+    marginBottom: "5px",
+  };
+
   const [labels, setLabels] = useState({});
+  const [imageLoaded, setImageLoaded] = useState(false); // Track image loading state
+
   useEffect(() => {
     const fetchLabel = async () => {
       try {
@@ -16,40 +45,43 @@ export default function HeadingData(props) {
     };
     fetchLabel();
   }, []);
-  function toTitleCase(str) {
-    if (!str) { 
-        // Check if str is null, undefined, or an empty string
-        return '';
+
+  const toTitleCase = (str) => {
+    if (!str) {
+      return "";
     }
-    return str.replace(
-        /\w\S*/g,
-        text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase()
-    );
-}
+    return str.replace(/\w\S*/g, (text) => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase());
+  };
+
   return (
     <>
- 
-    <table>
-    <tbody>
-      <tr>
-        <td> <img
-          src={`https://aphcsukrtya.shsbihar.in/${props.heading.facilityPhoto}`}
-          alt="image"  
-          style={{ height: "50px" }}
-        /></td>
-        <td> <span>
-          <span className="text-secondary">{labels[6] || "State"}:</span> {toTitleCase(props.heading.state)}
-          <span className="text-secondary"> || {labels[7] || "District"} :</span>
-          {toTitleCase(props.heading.districtName)}
-          <span className="text-secondary"> || {labels[8] || "Block"} :</span>
-          {toTitleCase(props.heading.blockName)}
-          <span className="text-secondary"> || {labels[5] || "Facility Name"}: </span>
-          {toTitleCase(props.heading.facilityName)}
-        </span></td>
-      </tr>
-       </tbody>
-    </table>
-   
+      <div style={containerStyle}>
+        <img
+          src={
+            imageLoaded
+              ? `https://aphcsukrtya.shsbihar.in/${props.heading.facilityPhoto}`
+              : "/placeholder-image.png" // Replace with your placeholder image path
+          }
+          alt="Facility"
+          style={logoStyle}
+          onLoad={() => setImageLoaded(true)} // When the image successfully loads
+          onError={() => setImageLoaded(false)} // Fallback to placeholder if image fails to load
+        />
+        <div style={headingStyle}>
+          <div style={detailStyle}>
+            {labels[6] || "State"}: {toTitleCase(props.heading.state)}
+          </div>
+          <div style={detailStyle}>
+            {labels[7] || "District"}: {toTitleCase(props.heading.districtName)}
+          </div>
+          <div style={detailStyle}>
+            {labels[8] || "Block"}: {toTitleCase(props.heading.blockName)}
+          </div>
+          <div style={detailStyle}>
+            {labels[5] || "Facility Name"}: {toTitleCase(props.heading.facilityName)}
+          </div>
+        </div>
+      </div>
     </>
   );
 }

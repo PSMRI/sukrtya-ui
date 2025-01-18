@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 export default function NavBar() {
   const [labels, setLabels] = useState({});
+  const [language, setLanguage] = useState(localStorage.getItem("language") || "1");
+
   useEffect(() => {
     const fetchLabel = async () => {
       try {
@@ -47,9 +49,12 @@ export default function NavBar() {
           <ul className="navbar-nav navbar-nav-right">
             <li className="nav-item dropdown">
               <button
-                className="btn btn-sm btn-warning text-white" onClick={handleLanguageChange}
+                className="language-toggle-button"
+                onClick={handleLanguageChange}
+
               >
-                English / हिंदी
+                <span style={{ fontWeight: language === "1" ? "bold" : "normal" }}>English</span> / <span style={{ fontWeight: language !== "1" ? "bold" : "normal" }}>हिंदी</span>
+
               </button>
             </li>
             {/* <li className="nav-item dropdown">

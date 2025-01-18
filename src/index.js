@@ -8,8 +8,8 @@ import axios from 'axios';
 
 // Set the base URL
 //axios.defaults.baseURL = 'http://a9d703198cd42472891b5692724cb600-769551428.ap-south-1.elb.amazonaws.com';
-//axios.defaults.baseURL = 'https://sukrtya.api.nitag.in';
-axios.defaults.baseURL = 'http://localhost:8080';
+axios.defaults.baseURL = 'https://sukrtya.api.nitag.in';
+//axios.defaults.baseURL = 'http://localhost:8080';
 
 // Optional: Set other defaults, like headers
 //axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';

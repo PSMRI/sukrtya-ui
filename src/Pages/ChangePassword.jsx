@@ -25,7 +25,7 @@ export default function ChangePassword() {
         confirmPassword: "",
     });
     const [errors, setErrors] = useState({});
-    const [submitted, setSubmitted] = useState(false);
+     
     const navigate = useNavigate();
     const handleChange = (e) => {
         setFormData({
@@ -36,17 +36,16 @@ export default function ChangePassword() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+    
         const validationErrors = validate(formData);
         setErrors(validationErrors);
-
+    
         if (Object.keys(validationErrors).length > 0) {
-            setErrors(validationErrors);
             return;
         }
-
+    
         setLoading(true);
-
+    
         try {
             const token = localStorage.getItem("authToken");
             const response = await axios.post(
@@ -65,13 +64,21 @@ export default function ChangePassword() {
             alert(response.data.message);
             navigate("/login");
         } catch (error) {
-            setErrors({
-                global:
-                    error.response.data.message || "abc",
-            });
+            if (error.response && error.response.status === 401) {
+                // Token expired or unauthorized access
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem("authToken"); // Clear the token
+                navigate("/login"); // Redirect to login page
+            } else {
+                setErrors({
+                    global:
+                        error.response?.data?.message || "An unexpected error occurred.Please login again after logout.",
+                });
+            }
             setLoading(false);
         }
     };
+    
     // Validation logic
     const validate = (data) => {
         const newErrors = {};
@@ -219,8 +226,17 @@ export default function ChangePassword() {
                                         <button disabled={loading}
                                             type="submit" style={{ width: "100%" }}
                                             className="btn btn-primary mr-2"
-                                        >
-                                            {loading ? "Please Wait..." : labels[1] || "Change Password"}
+                                        > {loading ? (
+                                            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                              <img
+                                                src="./loader.gif"
+                                                alt="PLease wait..."
+                                                style={{ width: "20px", height: "20px" }}
+                                              />
+                                            Please Wait...
+                                            </span>
+                                          ) :    labels[1] || "Change Password"}
+                                            
                                         </button>
                                         {errors.global && (
                                             <p style={{ color: "red" }}>{errors.global}</p>
@@ -234,6 +250,14 @@ export default function ChangePassword() {
                     </div>
                 </div>
             </div>
+
+            <div
+  className="floating-back-button"
+  onClick={() => window.history.back()}
+>
+  ← Back
+</div>
+
         </Base>
     )
 }

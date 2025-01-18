@@ -4,7 +4,7 @@ import LanguageData from "../Data/LanguageList.json";
 import axios from "axios";
 
 export default function Login() {
-  const allowedLanguages = ["1","2"];
+  const allowedLanguages = ["1", "2"];
   const [loading, setLoading] = useState(false); // Loading state
   const [formData, setFormData] = useState({
     username: "",
@@ -54,13 +54,13 @@ export default function Login() {
       }
 
       if (isMounted) {
-        
+
         // Update state only if the component is still mounted
         localStorage.setItem("authToken", response.data.token);
         localStorage.setItem("userID", userID);
         localStorage.setItem("profileName", profileName);
         localStorage.setItem("username", userName);
-        localStorage.setItem("language",  formData.language);
+        localStorage.setItem("language", formData.language);
         localStorage.setItem("isApprover", response.data.user.approvalStatus);
         //alert("Welcome - " + profileName);
         navigate("/dashboard", {
@@ -215,7 +215,16 @@ export default function Login() {
                         type="submit"
                         className="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
                       >
-                        {loading ? "Please Wait..." : "Login"}
+                        {loading ? (
+                          <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <img
+                              src="./loader.gif"
+                              alt="PLease wait..."
+                              style={{ width: "20px", height: "20px" }}
+                            />
+                            Please Wait...
+                          </span>
+                        ) : ("Login")}
                       </button>
                       {errors.global && (
                         <p style={{ color: "red" }}>{errors.global}</p>
