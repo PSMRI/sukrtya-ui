@@ -202,7 +202,7 @@ export default function FacilityTrans() {
                               {labels[8] || "User"} : {item.username}
                               <br />{labels[9] || "Transaction Id"}  : <strong> {item.transactionId}</strong>
                               <br />
-                              {labels[10] || "Created Date"} : {item.userSubmissionDate}
+                              {labels[10] || "Assessment Date"} : {item.userSubmissionDate}
                             </p>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
                               <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>

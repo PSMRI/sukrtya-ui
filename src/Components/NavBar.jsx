@@ -48,7 +48,7 @@ export default function NavBar() {
         <div className="navbar-menu-wrapper d-flex align-items-center justify-content-end">
           <ul className="navbar-nav navbar-nav-right">
             <li className="nav-item dropdown">
-              <button
+              <button style={{ display : "none" }}
                 className="language-toggle-button"
                 onClick={handleLanguageChange}
 
