@@ -43,7 +43,7 @@ export default function Profile() {
                     <label>{labels[9] || "Address"}</label>
                     <input type="text" disabled className="form-control form-control-sm" placeholder="Patna" aria-label="Username" />
                   </div>
-                  <button type="submit" disabled className="btn btn-primary mr-2" style={{ width: "100%" }}>{labels[22] || "Update Profile"}</button>
+                  {/* <button type="submit" disabled className="btn btn-primary mr-2" style={{ width: "100%" }}>{labels[22] || "Update Profile"}</button> */}
                 </div>
               </div>
             </div>

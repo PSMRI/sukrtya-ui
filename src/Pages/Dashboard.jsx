@@ -146,7 +146,7 @@ export default function Dashboard() {
                       <nav className="navbar">
                         <img
                           className="img-responsive"
-                          src={`https://aphcsukrtya.shsbihar.in/${item.facilityPhoto}`}
+                          src={"/placeholder-image.png"}
                           alt={item.facilityPhoto}
                           style={{ height: "70px", width: "70px" }}
                         />

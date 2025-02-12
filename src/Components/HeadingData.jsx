@@ -58,10 +58,7 @@ export default function HeadingData(props) {
       <div style={containerStyle}>
         <img
           src={
-            imageLoaded
-              ? `https://aphcsukrtya.shsbihar.in/${props.heading.facilityPhoto}`
-              : "/placeholder-image.png" // Replace with your placeholder image path
-          }
+           "/placeholder-image.png"}
           alt="Facility"
           style={logoStyle}
           onLoad={() => setImageLoaded(true)} // When the image successfully loads
