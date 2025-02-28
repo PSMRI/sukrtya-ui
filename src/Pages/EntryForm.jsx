@@ -646,7 +646,7 @@ export default function EntryForm() {
         );
 
         if (saveResponse.data.status === "success") {
-          if(transActionId !=null && transActionId !="") {
+          if(transActionId !==null && transActionId !=="") {
             alert("Form updated successfully");
           } else {
             alert("Form submitted successfully");
