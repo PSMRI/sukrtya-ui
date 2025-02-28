@@ -1,10 +1,11 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate,useLocation } from "react-router-dom";
 
 export default function NavBar() {
   const [labels, setLabels] = useState({});
   const [language, setLanguage] = useState(localStorage.getItem("language") || "1");
+  const location = useLocation();
 
   useEffect(() => {
     const fetchLabel = async () => {
@@ -48,13 +49,12 @@ export default function NavBar() {
         <div className="navbar-menu-wrapper d-flex align-items-center justify-content-end">
           <ul className="navbar-nav navbar-nav-right">
             <li className="nav-item dropdown">
-              <button style={{ display : "none" }}
+            <button
                 className="language-toggle-button"
                 onClick={handleLanguageChange}
-
+                style={{ display: location.pathname.includes('entry-form') ? 'none' : 'block' }}
               >
                 <span style={{ fontWeight: language === "1" ? "bold" : "normal" }}>English</span> / <span style={{ fontWeight: language !== "1" ? "bold" : "normal" }}>हिंदी</span>
-
               </button>
             </li>
             {/* <li className="nav-item dropdown">

@@ -15,7 +15,8 @@ export default function EntryForm() {
   const navigate = useNavigate();
 
   const location = useLocation();
-  const { formId, transActionId, user, approvalStatus, lat, lon, gaddress } = location.state;
+  const { formId, transActionId, user, approvalStatus, lat, lon, gaddress } =
+    location.state;
   const serializedObject = location.state?.object;
   const myObject = JSON.parse(serializedObject);
   const [facingMode, setFacingMode] = useState("user"); // Default to front camera
@@ -32,8 +33,12 @@ export default function EntryForm() {
   const handleLocationError = useCallback(
     (err) => {
       const errorMessages = {
-        1: labels.permissionDenied || "Permission denied. Please enable location access in your browser settings.",
-        2: labels.locationUnavailable || "Location unavailable. Ensure GPS is enabled.",
+        1:
+          labels.permissionDenied ||
+          "Permission denied. Please enable location access in your browser settings.",
+        2:
+          labels.locationUnavailable ||
+          "Location unavailable. Ensure GPS is enabled.",
         3: labels.requestTimedOut || "Request timed out. Try again.",
         default: labels.unknownError || "An unknown error occurred.",
       };
@@ -44,21 +49,20 @@ export default function EntryForm() {
   );
 
   const requestLocationAccess = useCallback(() => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
-        setError(null); // Clear errors on success
-        setPermissionDenied(false);
-      },
-      handleLocationError
-    );
+    navigator.geolocation.getCurrentPosition((position) => {
+      setLatitude(position.coords.latitude);
+      setLongitude(position.coords.longitude);
+      setError(null); // Clear errors on success
+      setPermissionDenied(false);
+    }, handleLocationError);
   }, [handleLocationError]);
 
   useEffect(() => {
-    
     if (!navigator.geolocation) {
-      setError(labels.geolocationNotSupported || "Geolocation is not supported by your browser.");
+      setError(
+        labels.geolocationNotSupported ||
+          "Geolocation is not supported by your browser."
+      );
       return;
     }
 
@@ -68,39 +72,44 @@ export default function EntryForm() {
         setError(null);
       } else if (state === "denied") {
         setPermissionDenied(true);
-        setError(labels.permissionDenied || "Location permission is denied. Please enable it.");
+        setError(
+          labels.permissionDenied ||
+            "Location permission is denied. Please enable it."
+        );
       }
     };
 
     const handleLocationPermission = async () => {
       try {
-        const permissionStatus = await navigator.permissions.query({ name: "geolocation" });
+        const permissionStatus = await navigator.permissions.query({
+          name: "geolocation",
+        });
 
         if (permissionStatus.state === "denied") {
           handlePermissionChange("denied");
         }
 
         // Listen for permission changes
-        permissionStatus.onchange = () => handlePermissionChange(permissionStatus.state);
+        permissionStatus.onchange = () =>
+          handlePermissionChange(permissionStatus.state);
       } catch {
-        console.warn(labels.permissionApiUnsupported || "Permission API might not be supported.");
+        console.warn(
+          labels.permissionApiUnsupported ||
+            "Permission API might not be supported."
+        );
       }
     };
 
     handleLocationPermission();
 
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
-        setError(null); // Clear errors on success
-      },
-      handleLocationError
-    );
+    const watchId = navigator.geolocation.watchPosition((position) => {
+      setLatitude(position.coords.latitude);
+      setLongitude(position.coords.longitude);
+      setError(null); // Clear errors on success
+    }, handleLocationError);
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, [labels, handleLocationError]);
-
 
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [currentCameraQuestion, setCurrentCameraQuestion] = useState(null); // Store current question object
@@ -149,13 +158,14 @@ export default function EntryForm() {
     }
   };
 
-
   useEffect(() => {
     //console.log(formId+" || "+ transActionId+" || "+ user+" || "+approvalStatus+" || "+ lat+" || "+lon+" || "+ gaddress );
     const fetchLabel = async () => {
       try {
         const labelResponse = await axios.get(
-          `sukrtya/api/language-labels/getLabels?formId=4&regLId=${localStorage.getItem("language")}`
+          `sukrtya/api/language-labels/getLabels?formId=4&regLId=${localStorage.getItem(
+            "language"
+          )}`
         );
         setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
       } catch (error) {
@@ -171,7 +181,9 @@ export default function EntryForm() {
       try {
         const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
         const response = await axios.get(
-          `/sukrtya/api/questions?formId=${formId}&transActionId=${transActionId}&RegLId=${localStorage.getItem("language")}`,
+          `/sukrtya/api/questions?formId=${formId}&transActionId=${transActionId}&RegLId=${localStorage.getItem(
+            "language"
+          )}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -194,8 +206,6 @@ export default function EntryForm() {
 
     fetchData();
   }, [formId, transActionId, labels]); // Include 'labels' since it is used in the error handling
-
-
 
   // Apply skip logic once `answers` is populated
   useEffect(() => {
@@ -245,7 +255,6 @@ export default function EntryForm() {
 
     setHiddenQuestions(initialHiddenQuestions);
   }, [answers, questions]);
-
 
   useEffect(() => {
     if (navigator.permissions) {
@@ -301,10 +310,9 @@ export default function EntryForm() {
     setAnswers(initialAnswers);
   }, [questions]);
 
-
   const handleInputChange = (questionId, value) => {
     // Sanitize input (basic example)
-    const sanitizedValue = value.replace(/<[^>]*>/g, ''); // Remove HTML tags
+    const sanitizedValue = value.replace(/<[^>]*>/g, ""); // Remove HTML tags
     // Define the allowed pattern (disallow *, <, and >)
     const allowedPattern = /^[^*<>]*$/;
 
@@ -323,10 +331,12 @@ export default function EntryForm() {
       // Set an error for the specific question
       setErrors((prevErrors) => ({
         ...prevErrors,
-        [questionId]: localStorage.getItem("language") === "1" ? 'Invalid input detected! Only *, <, and > are not allowed.' : 'अमान्य इनपुट पाया गया! केवल *, <, और > की अनुमति नहीं है।',
+        [questionId]:
+          localStorage.getItem("language") === "1"
+            ? "Invalid input detected! Only *, <, and > are not allowed."
+            : "अमान्य इनपुट पाया गया! केवल *, <, और > की अनुमति नहीं है।",
       }));
     }
-
 
     // Update the answers state
     const updatedAnswers = { ...answers, [questionId]: value };
@@ -458,7 +468,10 @@ export default function EntryForm() {
         !hiddenQuestions.has(questionId) &&
         !answers[questionId]
       ) {
-        newErrors[questionId] = localStorage.getItem("language") === "1" ? "This field is required." : "यह फ़ील्ड आवश्यक है।";
+        newErrors[questionId] =
+          localStorage.getItem("language") === "1"
+            ? "This field is required."
+            : "यह फ़ील्ड आवश्यक है।";
         if (!firstInvalidField) firstInvalidField = questionId;
       }
 
@@ -466,15 +479,17 @@ export default function EntryForm() {
       if (questionType === "Numeric" && answers[questionId]) {
         const numericValue = parseFloat(answers[questionId]);
         if (minvalue && numericValue < minvalue) {
-          newErrors[
-            questionId
-          ] = localStorage.getItem("language") === "1" ? `Please enter a number should be at least ${minvalue}` : `कृपया संख्या कम से कम ${minvalue} दर्ज करें। `;
+          newErrors[questionId] =
+            localStorage.getItem("language") === "1"
+              ? `Please enter a number should be at least ${minvalue}`
+              : `कृपया संख्या कम से कम ${minvalue} दर्ज करें। `;
           if (!firstInvalidField) firstInvalidField = questionId;
         }
         if (maxvalue && numericValue > maxvalue) {
-          newErrors[
-            questionId
-          ] = localStorage.getItem("language") === "1" ? `Please enter less than ${maxvalue}` : `कृपया ${maxvalue} से कम दर्ज करें। `;
+          newErrors[questionId] =
+            localStorage.getItem("language") === "1"
+              ? `Please enter less than ${maxvalue}`
+              : `कृपया ${maxvalue} से कम दर्ज करें। `;
           if (!firstInvalidField) firstInvalidField = questionId;
         }
       }
@@ -542,7 +557,9 @@ export default function EntryForm() {
     Object.entries(answers)
       .map(([questionId, value]) => ({
         questionId: parseInt(questionId),
-        questionType: questions.find((q) => q.questionId === parseInt(questionId))?.questionType,
+        questionType: questions.find(
+          (q) => q.questionId === parseInt(questionId)
+        )?.questionType,
         answer: value,
       }))
       .filter((item) => item.answer);
@@ -551,27 +568,59 @@ export default function EntryForm() {
     setLoading(true);
 
     if (validateForm()) {
-
       const token = localStorage.getItem("authToken");
       const userId = localStorage.getItem("userID");
       const profileName = localStorage.getItem("profileName");
 
       const postData = {
         transactionId: transActionId,
-        userId: (user === null ? userId : user),
+        userId: user === null ? userId : user,
         formId,
         facilityNIN: myObject.facilityNin,
         postAnswer: constructPostAnswers(answers, questions),
       };
-      console.log("formId : " + formId + " || transActionId : " + transActionId + " || user : " + user + " || approvalStatus : " + approvalStatus + " || lat : " + lat + " || lon : " + lon + " || gaddress : " + gaddress);
+      console.log(
+        "formId : " +
+          formId +
+          " || transActionId : " +
+          transActionId +
+          " || user : " +
+          user +
+          " || approvalStatus : " +
+          approvalStatus +
+          " || lat : " +
+          lat +
+          " || lon : " +
+          lon +
+          " || gaddress : " +
+          gaddress
+      );
 
-      if ((localStorage.getItem("isApprover") === "0") || (transActionId === null) ) {
-        Object.assign(postData, { latitude, longitude, googleAddress: address });
+      if (
+        localStorage.getItem("isApprover") === "0" ||
+        transActionId === null
+      ) {
+        Object.assign(postData, {
+          latitude,
+          longitude,
+          googleAddress: address,
+        });
       } else {
-        if ((user===localStorage.getItem("userID")) && (localStorage.getItem("isApprover") === "0")) {
-          Object.assign(postData, { latitude, longitude, googleAddress: address });
+        if (
+          user === localStorage.getItem("userID") &&
+          localStorage.getItem("isApprover") === "0"
+        ) {
+          Object.assign(postData, {
+            latitude,
+            longitude,
+            googleAddress: address,
+          });
         } else {
-          Object.assign(postData, { latitude: lat, longitude: lon, googleAddress: gaddress });
+          Object.assign(postData, {
+            latitude: lat,
+            longitude: lon,
+            googleAddress: gaddress,
+          });
         }
       }
 
@@ -596,9 +645,13 @@ export default function EntryForm() {
           token
         );
 
-
         if (saveResponse.data.status === "success") {
-          alert(labels[14] || "Form submitted successfully");
+          if(transActionId !=null && transActionId !="") {
+            alert("Form updated successfully");
+          } else {
+            alert("Form submitted successfully");
+          }
+          //alert(labels[14] || "Form submitted successfully");
           navigate("/facility-trans", { state: { object: serializedObject } });
         } else {
           alert(`${saveResponse.data.status} - ${saveResponse.data.message}`);
@@ -615,7 +668,12 @@ export default function EntryForm() {
   const handleApproval = async () => {
     setLoading(true);
     if (validateForm()) {
-      if (window.confirm(labels[35] || "I have confirmed the correctness and authenticity of the data and photos given, and I hereby approve.")) {
+      if (
+        window.confirm(
+          labels[35] ||
+            "I have confirmed the correctness and authenticity of the data and photos given, and I hereby approve."
+        )
+      ) {
         const token = localStorage.getItem("authToken");
         const userId = localStorage.getItem("userID");
         const profileName = localStorage.getItem("profileName");
@@ -628,13 +686,31 @@ export default function EntryForm() {
           postAnswer: constructPostAnswers(answers, questions),
         };
 
-        if ((localStorage.getItem("isApprover") === "0") || (transActionId === null) ) {
-          Object.assign(postData, { latitude, longitude, googleAddress: address });
+        if (
+          localStorage.getItem("isApprover") === "0" ||
+          transActionId === null
+        ) {
+          Object.assign(postData, {
+            latitude,
+            longitude,
+            googleAddress: address,
+          });
         } else {
-          if ((user===localStorage.getItem("userID")) && (localStorage.getItem("isApprover") === "0")) {
-            Object.assign(postData, { latitude, longitude, googleAddress: address });
+          if (
+            user === localStorage.getItem("userID") &&
+            localStorage.getItem("isApprover") === "0"
+          ) {
+            Object.assign(postData, {
+              latitude,
+              longitude,
+              googleAddress: address,
+            });
           } else {
-            Object.assign(postData, { latitude: lat, longitude: lon, googleAddress: gaddress });
+            Object.assign(postData, {
+              latitude: lat,
+              longitude: lon,
+              googleAddress: gaddress,
+            });
           }
         }
 
@@ -685,7 +761,11 @@ export default function EntryForm() {
   const handleRevoke = async () => {
     setLoading(true);
 
-    if (window.confirm(labels[36] || "Are you sure you want to revoke the approval?")) {
+    if (
+      window.confirm(
+        labels[36] || "Are you sure you want to revoke the approval?"
+      )
+    ) {
       const token = localStorage.getItem("authToken");
       const userId = localStorage.getItem("userID");
       const profileName = localStorage.getItem("profileName");
@@ -763,12 +843,17 @@ export default function EntryForm() {
 
               <select
                 ref={(el) => (inputRefs.current[questionId] = el)}
-                className={`text-primary form-control form-select ${errors[questionId] ? "is-invalid" : ""
-                  }`}
+                className={`text-primary form-control form-select ${
+                  errors[questionId] ? "is-invalid" : ""
+                }`}
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
               >
-                {localStorage.getItem("language") === "1" ? <option value="">Select an option</option> : <option value="">एक विकल्प चुनें</option>}
+                {localStorage.getItem("language") === "1" ? (
+                  <option value="">Select an option</option>
+                ) : (
+                  <option value="">एक विकल्प चुनें</option>
+                )}
 
                 {questionOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -796,9 +881,8 @@ export default function EntryForm() {
               <div>
                 <>
                   {answers[questionId] && (
-
                     <div className="image-container">
-                      <canvas ref={canvasRef} style={{ display: 'none' }} />
+                      <canvas ref={canvasRef} style={{ display: "none" }} />
                       <img
                         src={answers[questionId]}
                         title={`File Size: ${imageSize} KB`}
@@ -823,7 +907,8 @@ export default function EntryForm() {
                       onClick={() => handleRotate(questionId)}
                       className="btn btn-outline-primary btn-icon-text me-2 mr-2 ml-2"
                     >
-                      <i className="ti-loop btn-icon-prepend"></i> {labels[6] || "Rotate Image"}
+                      <i className="ti-loop btn-icon-prepend"></i>{" "}
+                      {labels[6] || "Rotate Image"}
                     </button>
                   )}
                   <button
@@ -831,7 +916,8 @@ export default function EntryForm() {
                     type="button"
                     className="btn btn-outline-success btn-icon-text mr-2 ml-2"
                   >
-                    <i className="ti-camera btn-icon-prepend"></i> {labels[2] || "Capture Image"}
+                    <i className="ti-camera btn-icon-prepend"></i>{" "}
+                    {labels[2] || "Capture Image"}
                   </button>
 
                   {errors[questionId] && (
@@ -855,25 +941,26 @@ export default function EntryForm() {
               </label>
               <input
                 ref={(el) => (inputRefs.current[questionId] = el)}
-                type="number" autoComplete="off"
+                type="number"
+                autoComplete="off"
                 min={minvalue}
                 max={maxvalue}
-                className={`text-primary form-control ${errors[questionId] ? "is-invalid" : ""
-                  }`}
+                className={`text-primary form-control ${
+                  errors[questionId] ? "is-invalid" : ""
+                }`}
                 placeholder="0"
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
                 onKeyDown={(e) => {
-                  if (['e', 'E', '+', '-'].includes(e.key)) {
+                  if (["e", "E", "+", "-"].includes(e.key)) {
                     e.preventDefault(); // Prevent restricted keys
                   }
                 }}
                 onInput={(e) => {
                   const value = e.target.value;
                   if (/[eE+-]/.test(value)) {
-                    e.target.value = value.replace(/[eE+-]/g, ''); // Removed unnecessary escape for '-'
+                    e.target.value = value.replace(/[eE+-]/g, ""); // Removed unnecessary escape for '-'
                   }
-
                 }}
               />
               {errors[questionId] && (
@@ -894,11 +981,13 @@ export default function EntryForm() {
               </label>
               <input
                 ref={(el) => (inputRefs.current[questionId] = el)}
-                type="text" autoComplete="off"
+                type="text"
+                autoComplete="off"
                 placeholder="type here.."
                 maxLength={maxvalue}
-                className={`text-primary form-control ${errors[questionId] ? "is-invalid" : ""
-                  }`}
+                className={`text-primary form-control ${
+                  errors[questionId] ? "is-invalid" : ""
+                }`}
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
               />
@@ -927,31 +1016,36 @@ export default function EntryForm() {
       <div className="container-fluid page-body-wrapper">
         <div className="main-panel">
           <div className="content-wrapper">
-          <div className="row" style={{
-              display: "flex",
-              alignItems: "center",
-              fontFamily: "Arial, sans-serif",
-              padding: "20px",
-              backgroundColor: "#f0f0f0",
-              borderRadius: "8px",
-            }}>
-
+            <div
+              className="row"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                fontFamily: "Arial, sans-serif",
+                padding: "20px",
+                backgroundColor: "#f0f0f0",
+                borderRadius: "8px",
+              }}
+            >
               <div className="col-md-6 col-sm-12 col-xs-12 col-lg-6 col-xl-6">
-              <div className="mobile-display">
+                <div className="mobile-display">
                   <div className="font-weight-bold text-capitalize">
-                     Welcome ,
+                    Welcome ,
                     <span className="text-success">
                       {localStorage.getItem("profileName")}
-                    </span> <br/> <small className="text-muted">
+                    </span>{" "}
+                    <br />{" "}
+                    <small className="text-muted">
                       {localStorage.getItem("username")}
                     </small>
                   </div>
-
                 </div>
-                <HeadingData heading={myObject} /></div><div className="col-md-2"></div>
+                <HeadingData heading={myObject} />
+              </div>
+              <div className="col-md-2"></div>
               <div className="mobile-hidden col-md-4 col-sm-12 col-xs-12 col-lg-4 col-xl-4 text-right ">
                 <h3 className="font-weight-bold text-capitalize">
-                   Welcome,
+                  Welcome,
                   <span className="text-success">
                     {localStorage.getItem("profileName").split(" ")[0]}
                   </span>
@@ -962,8 +1056,12 @@ export default function EntryForm() {
                     {localStorage.getItem("username")}
                   </span>
                 </h6>
-                {transActionId &&(  <div className="mt-4" title="Transaction ID"><small>#</small><small className="text-success">{transActionId}</small></div>)}
-               
+                {transActionId && (
+                  <div className="mt-4" title="Transaction ID">
+                    <small>#</small>
+                    <small className="text-success">{transActionId}</small>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -973,9 +1071,10 @@ export default function EntryForm() {
                 <div className="row-md-4">
                   <div className="card">
                     <div className="card-body text-center">
-                      <img alt="location access"
+                      <img
+                        alt="location access"
                         className="img-fluid"
-                        src="./images/enable-location-services-pop-up-permission.png"
+                        src="./images/enable-location-services-pop-up-permission.png" style={{height: "200px"}}
                       />
                       {error && <h4 style={{ color: "red" }}>{error}</h4>}
                       <button
@@ -988,6 +1087,40 @@ export default function EntryForm() {
                       >
                         {labels[9] || "Click here to allow location"}
                       </button>
+                      <br />
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          padding: "10px",
+                          backgroundColor: "#ffcccb",
+                          borderRadius: "5px",textAlign: "left"
+                        }}
+                      >
+                        <p>
+                          <strong>Location Access Blocked</strong>
+                          <br />
+                          It seems that location access has been blocked in your
+                          browser settings. To enable it, please follow the
+                          steps below:
+                        </p>
+                        <ul>
+                          <li>
+                            <strong>Chrome:</strong> Go to{" "}
+                            <code>chrome://settings/content/location</code> and
+                            enable location access.
+                          </li>
+                          <li>
+                            <strong>Firefox:</strong> Go to{" "}
+                            <code>about:preferences#privacy</code> and set
+                            "Allow websites to access your location".
+                          </li>
+                          <li>
+                            <strong>Safari:</strong> Go to Safari preferences,
+                            click the "Privacy" tab, and allow location for the
+                            website.
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -999,106 +1132,151 @@ export default function EntryForm() {
                   <form onSubmit={(e) => e.preventDefault()}>
                     <div className="row mt-4">
                       {questions
-                        .filter((question) => !hiddenQuestions.has(question.questionId))
+                        .filter(
+                          (question) =>
+                            !hiddenQuestions.has(question.questionId)
+                        )
                         .map((question) => renderQuestion(question))}
                     </div>
                     <div className="">
-
-                      {transActionId != null && approvalStatus === 2 && localStorage.getItem("isApprover") === "0" && (
-                        <h6> <strong className="text-success">{labels[34] || "The data has been approved. To update the record, request an admin to revoke the approval."}</strong></h6>
-                      )}
-
-
-                      {latitude && longitude ? (<>
-                        <p> <strong>{labels[33] || "Your Current Location Details"} :</strong> </p>
-                        <p>Latitude: {latitude}, Longitude: {longitude}<br />Full Address: {address}</p>
-
-                        {transActionId == null && (
-                          <button
-                            style={{ width: "200px" }}
-                            disabled={loading}
-                            className="btn btn-primary mr-2"
-                            type="button"
-                            onClick={handleSubmit}
-                          >
-                            {loading ? (
-                              <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <img
-                                  src="./loader.gif"
-                                  alt="PLease wait..."
-                                  style={{ width: "20px", height: "20px" }}
-                                />
-                                Please Wait...
-                              </span>
-                            ) : labels[7] || "Submit"}
-
-
-                          </button>
-                        )}
-                        {transActionId !== null && approvalStatus !== 2 && (
-                          <button
-                            style={{ width: "200px" }}
-                            className="btn btn-warning mr-2 mt-2"
-                            type="button"
-                            disabled={loading}
-                            onClick={handleSubmit}
-                          >
-                            {loading ? (
-                              <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <img
-                                  src="./loader.gif"
-                                  alt="PLease wait..."
-                                  style={{ width: "20px", height: "20px" }}
-                                />
-                                Please Wait...
-                              </span>
-                            ) : (
-                              labels[30] || "Update"
-                            )}
-
-                          </button>
+                      {transActionId != null &&
+                        approvalStatus === 2 &&
+                        localStorage.getItem("isApprover") === "0" && (
+                          <h6>
+                            {" "}
+                            <strong className="text-success">
+                              {labels[34] ||
+                                "The data has been approved. To update the record, request an admin to revoke the approval."}
+                            </strong>
+                          </h6>
                         )}
 
-                        {localStorage.getItem("isApprover") === "2" && transActionId !== null && approvalStatus !== 2 && (
-                          <button
-                            style={{ width: "200px" }}
-                            className="btn btn-success mr-2 mt-2"
-                            type="button"
-                            disabled={loading}
-                            onClick={handleApproval}
-                          >
-                            {loading ? (
-                              labels[31] || "Approve"
-                            ) : (
-                              labels[31] || "Approve")}
-                          </button>
-                        )}
-                        {localStorage.getItem("isApprover") === "2" && approvalStatus === 2 && (
-                          <button
-                            style={{ width: "200px" }}
-                            className="btn btn-danger mr-2 mt-2"
-                            type="button"
-                            disabled={loading}
-                            onClick={handleRevoke}
-                          > {loading ? (
-                            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <img
-                                src="./loader.gif"
-                                alt="PLease wait..."
-                                style={{ width: "20px", height: "20px" }}
-                              />
-                              Please Wait...
-                            </span>
-                          ) : (labels[32] || "Revoke")}
-                          </button>
-                        )}
-                      </>) : (
+                      {latitude && longitude ? (
                         <>
-                          <img alt="loading"
+                          <p>
+                            {" "}
+                            <strong>
+                              {labels[33] || "Your Current Location Details"} :
+                            </strong>{" "}
+                          </p>
+                          <p>
+                            Latitude: {latitude}, Longitude: {longitude}
+                            <br />
+                            Full Address: {address}
+                          </p>
+
+                          {transActionId == null && (
+                            <button
+                              style={{ width: "200px" }}
+                              disabled={loading}
+                              className="btn btn-primary mr-2"
+                              type="button"
+                              onClick={handleSubmit}
+                            >
+                              {loading ? (
+                                <span
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  <img
+                                    src="./loader.gif"
+                                    alt="PLease wait..."
+                                    style={{ width: "20px", height: "20px" }}
+                                  />
+                                  Please Wait...
+                                </span>
+                              ) : (
+                                labels[7] || "Submit"
+                              )}
+                            </button>
+                          )}
+                          {transActionId !== null && approvalStatus !== 2 && (
+                            <button
+                              style={{ width: "200px" }}
+                              className="btn btn-warning mr-2 mt-2"
+                              type="button"
+                              disabled={loading}
+                              onClick={handleSubmit}
+                            >
+                              {loading ? (
+                                <span
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  <img
+                                    src="./loader.gif"
+                                    alt="PLease wait..."
+                                    style={{ width: "20px", height: "20px" }}
+                                  />
+                                  Please Wait...
+                                </span>
+                              ) : (
+                                labels[30] || "Update"
+                              )}
+                            </button>
+                          )}
+
+                          {localStorage.getItem("isApprover") === "2" &&
+                            transActionId !== null &&
+                            approvalStatus !== 2 && (
+                              <button
+                                style={{ width: "200px" }}
+                                className="btn btn-success mr-2 mt-2"
+                                type="button"
+                                disabled={loading}
+                                onClick={handleApproval}
+                              >
+                                {loading
+                                  ? labels[31] || "Approve"
+                                  : labels[31] || "Approve"}
+                              </button>
+                            )}
+                          {localStorage.getItem("isApprover") === "2" &&
+                            approvalStatus === 2 && (
+                              <button
+                                style={{ width: "200px" }}
+                                className="btn btn-danger mr-2 mt-2"
+                                type="button"
+                                disabled={loading}
+                                onClick={handleRevoke}
+                              >
+                                {" "}
+                                {loading ? (
+                                  <span
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "8px",
+                                    }}
+                                  >
+                                    <img
+                                      src="./loader.gif"
+                                      alt="PLease wait..."
+                                      style={{ width: "20px", height: "20px" }}
+                                    />
+                                    Please Wait...
+                                  </span>
+                                ) : (
+                                  labels[32] || "Revoke"
+                                )}
+                              </button>
+                            )}
+                        </>
+                      ) : (
+                        <>
+                          <img
+                            alt="loading"
                             style={{ height: "50px", width: "50px" }}
                             src="./images/loading.gif"
                           />
-                          <p> {labels[17] || "Fetching location..."}</p></>
+                          <p> {labels[17] || "Fetching location..."}</p>
+                        </>
                       )}
                     </div>
 
@@ -1113,7 +1291,7 @@ export default function EntryForm() {
 
                           {cameraPermission === "granted" ? (
                             <>
-                              <div className="modal-body">
+                            <div className="modal-body" style={{ position: 'relative' }}>
                                 <Webcam
                                   audio={false}
                                   videoConstraints={videoConstraints}
@@ -1126,23 +1304,33 @@ export default function EntryForm() {
                                   }
                                   style={{ width: "100%", height: "auto" }}
                                 />
-                                <div style={{ textAlign: "left" }}>
+                                <div style={{ 
+                                  position: 'absolute', 
+                                  bottom: '30px', 
+                                  right: '30px', 
+                                  zIndex: 1000 
+                                }}>
                                   <button
                                     onClick={toggleCamera}
                                     type="button"
-                                    className="btn  btn-sm btn-toggle"
+                                    className="btn btn-sm btn-toggle"
                                     data-toggle="button"
                                     aria-pressed="false"
                                     autoComplete="off"
+                                    style={{
+                                      backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                      borderRadius: '20px',
+                                      padding: '5px 15px', 
+                                    }}
                                   >
                                     <div className="switch"></div>{" "}
                                     <div className="facing-mode-container">
                                       {facingMode === "user" ? (
-                                        <span style={{ paddingLeft: "20px" }}>
+                                        <span className="text-dark" style={{ paddingLeft: "20px" }}>
                                           {labels[3] || "Back Camera"}
                                         </span>
                                       ) : (
-                                        <span style={{ paddingRight: "40px" }}>
+                                        <span className="text-dark" style={{ paddingRight: "20px" }}>
                                           {labels[16] || "Front Camera"}
                                         </span>
                                       )}
@@ -1174,14 +1362,18 @@ export default function EntryForm() {
                             </>
                           ) : (
                             <div className="text-center">
-                              <img alt="camera access denied"
+                              <img
+                                alt="camera access denied"
                                 style={{ height: "150px", width: "150px" }}
                                 src="./images/camera-off-icon.png"
                               />
                               <h3 className="text-danger">
                                 {labels[10] || "Camera access is denied."}
                               </h3>
-                              <p> {labels[11] || "Please allow camera access"}</p>
+                              <p>
+                                {" "}
+                                {labels[11] || "Please allow camera access"}
+                              </p>
                               {error && <p style={{ color: "red" }}>{error}</p>}
                               <button
                                 onClick={requestCameraAccess}
@@ -1191,7 +1383,8 @@ export default function EntryForm() {
                                 }}
                                 className="btn btn-link mb-5"
                               >
-                                {labels[12] || "Click here to allow camera permission"}
+                                {labels[12] ||
+                                  "Click here to allow camera permission"}
                               </button>
 
                               <div
@@ -1216,7 +1409,8 @@ export default function EntryForm() {
                 ) : (
                   <div className="text-center">
                     <br /> <br />
-                    <img alt="loading"
+                    <img
+                      alt="loading"
                       src="./images/loading.gif"
                       style={{ height: "100px" }}
                     />
@@ -1230,12 +1424,11 @@ export default function EntryForm() {
       </div>
 
       <div
-  className="floating-back-button"
-  onClick={() => window.history.back()}
->
-  ← Back
-</div>
-
+        className="floating-back-button"
+        onClick={() => window.history.back()}
+      >
+        ← Back
+      </div>
     </Base>
   );
 }
