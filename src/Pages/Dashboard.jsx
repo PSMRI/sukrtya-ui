@@ -24,7 +24,9 @@ export default function Dashboard() {
         console.error("Error fetching labels:", error);
       }
     };
+    
     fetchLabel();
+   
   }, []);
 
   useEffect(() => {

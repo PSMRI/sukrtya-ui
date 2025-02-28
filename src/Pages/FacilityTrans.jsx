@@ -24,7 +24,7 @@ export default function FacilityTrans() {
         const labelResponse = await axios.get(
           `sukrtya/api/language-labels/getLabels?formId=3&regLId=${localStorage.getItem("language")}`
         );
-        console.log("labelResponse : "+labelResponse)
+        //console.log("labelResponse : "+labelResponse)
         setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
       } catch (error) {
         console.error("Error fetching labels:", error);
