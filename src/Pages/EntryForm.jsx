@@ -1291,53 +1291,46 @@ export default function EntryForm() {
 
                           {cameraPermission === "granted" ? (
                             <>
-                            <div className="modal-body" style={{ position: 'relative' }}>
-                                <Webcam
-                                  audio={false}
-                                  videoConstraints={videoConstraints}
-                                  ref={webcamRef}
-                                  screenshotFormat="image/jpeg"
-                                  className="webcam"
-                                  onUserMedia={handleUserMedia}
-                                  onUserMediaError={() =>
-                                    setIsWebcamActive(false)
-                                  }
-                                  style={{ width: "100%", height: "auto" }}
-                                />
-                                <div style={{ 
-                                  position: 'absolute', 
-                                  bottom: '30px', 
-                                  right: '30px', 
-                                  zIndex: 1000 
-                                }}>
-                                  <button
-                                    onClick={toggleCamera}
-                                    type="button"
-                                    className="btn btn-sm btn-toggle"
-                                    data-toggle="button"
-                                    aria-pressed="false"
-                                    autoComplete="off"
-                                    style={{
-                                      backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                                      borderRadius: '20px',
-                                      padding: '5px 15px', 
-                                    }}
-                                  >
-                                    <div className="switch"></div>{" "}
-                                    <div className="facing-mode-container">
-                                      {facingMode === "user" ? (
-                                        <span className="text-dark" style={{ paddingLeft: "20px" }}>
-                                          {labels[3] || "Back Camera"}
-                                        </span>
-                                      ) : (
-                                        <span className="text-dark" style={{ paddingRight: "20px" }}>
-                                          {labels[16] || "Front Camera"}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </button>
-                                </div>
-                              </div>
+<div className="modal-body" style={{ position: 'relative' }}>
+  <Webcam
+    audio={false}
+    videoConstraints={videoConstraints}
+    ref={webcamRef}
+    screenshotFormat="image/jpeg"
+    className="webcam"
+    onUserMedia={handleUserMedia}
+    onUserMediaError={() =>
+      setIsWebcamActive(false)
+    }
+    style={{ width: "100%", height: "auto" }}
+  />
+  <div style={{ 
+    position: 'absolute', 
+    bottom: '30px', 
+    right: '30px', 
+    zIndex: 1000 
+  }}>
+    <button
+      onClick={toggleCamera}
+      type="button"
+      className="btn btn-sm btn-light rounded-circle"
+      style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        width: '40px',
+        height: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+      title={facingMode === "user" ? "Switch to back camera" : "Switch to front camera"}
+    >
+      <i className="ti-reload" style={{
+        transform: 'scaleX(-1)',
+        fontSize: '20px'
+      }}></i>
+    </button>
+  </div>
+</div>
 
                               <div
                                 className="modal-footer"
