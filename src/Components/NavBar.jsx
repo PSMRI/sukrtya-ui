@@ -14,7 +14,7 @@ export default function NavBar() {
     const fetchLabel = async () => {
       try {
         const labelResponse = await axios.get(
-          `sukrtya/api/language-labels/getLabels?formId=6&regLId=${localStorage.getItem(
+          `/sukrtya/api/language-labels/getLabels?formId=6&regLId=${localStorage.getItem(
             "language"
           )}`
         );
@@ -29,7 +29,7 @@ export default function NavBar() {
       try {
         const token = localStorage.getItem("authToken");
         const profileResponse = await axios.post(
-          "sukrtya/api/get-profile",
+          "/sukrtya/api/get-profile",
           {}, // Empty request body if no data needs to be sent
           {
             headers: {

@@ -8,7 +8,7 @@ export default function Profile() {
     const fetchLabel = async () => {
       try {
         const labelResponse = await axios.get(
-          `sukrtya/api/language-labels/getLabels?formId=5&regLId=${localStorage.getItem("language")}`
+          `/sukrtya/api/language-labels/getLabels?formId=5&regLId=${localStorage.getItem("language")}`
         );
         setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
       } catch (error) {

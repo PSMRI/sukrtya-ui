@@ -163,7 +163,7 @@ export default function EntryForm() {
     const fetchLabel = async () => {
       try {
         const labelResponse = await axios.get(
-          `sukrtya/api/language-labels/getLabels?formId=4&regLId=${localStorage.getItem(
+          `/sukrtya/api/language-labels/getLabels?formId=4&regLId=${localStorage.getItem(
             "language"
           )}`
         );
