@@ -29,7 +29,7 @@ export default function NavBar() {
       try {
         const token = localStorage.getItem("authToken");
         const profileResponse = await axios.post(
-          "/sukrtya/api/get-profile",
+          "sukrtya/api/get-profile",
           {}, // Empty request body if no data needs to be sent
           {
             headers: {

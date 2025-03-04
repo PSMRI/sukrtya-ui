@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import axios from 'axios';
 
 // Set the base URL
-axios.defaults.baseURL = 'https://api.sukrtya.in/';
+axios.defaults.baseURL = 'https://api.sukrtya.in';
 //axios.defaults.baseURL = 'https://sukrtya.api.nitag.in';
 //axios.defaults.baseURL = 'http://localhost:8080';
 
