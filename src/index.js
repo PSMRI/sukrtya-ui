@@ -13,8 +13,8 @@ import ChangePassword from "./Pages/ChangePassword";
 import Profile from "./Pages/Profile";
 
 // Set the base URL
-//axios.defaults.baseURL = 'https://api.sukrtya.in';
-axios.defaults.baseURL = 'https://sukrtya.api.nitag.in';
+axios.defaults.baseURL = 'https://api.sukrtya.in';
+//axios.defaults.baseURL = 'https://sukrtya.api.nitag.in';
 //axios.defaults.baseURL = 'http://localhost:8081';
 
 // Optional: Set other defaults, like headers
