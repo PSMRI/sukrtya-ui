@@ -1,26 +1,38 @@
-# Fetching the latest node image on alpine linux
-
-FROM node:20.17.0-alpine  AS development
-
-# Setting up the work directory
+# Build stage
+FROM node:18-alpine as build
 
 WORKDIR /app
 
-# Installing dependencies
+# Copy package files
+COPY package*.json ./
 
-COPY ./package.json /app
-COPY ./package-lock.json /app
+# Install dependencies with legacy peer deps flag
+RUN npm install --legacy-peer-deps
 
-
-RUN npm install -g npm@11.0.0
-
-
-# Copying all the files in our project
-
+# Copy source code
 COPY . .
 
+# Build the app
+RUN npm run build
 
+# Production stage
+FROM nginx:alpine
 
-# Starting our application
+# Install envsubst
+RUN apk add --no-cache bash gettext
 
-CMD ["npm","start"]
+# Copy built assets from build stage
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+
+# Script to replace environment variables and start nginx
+COPY docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
+
+# Expose port
+EXPOSE 80
+
+# Start nginx using the entrypoint script
+ENTRYPOINT ["/docker-entrypoint.sh"]

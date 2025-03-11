@@ -55,3 +55,10 @@ DIGIT Icon Storybook : [Click here](https://unified-dev.digit.org/storybook-svg/
  
 ### `npm run build` fails to minify
  
+
+
+ # Make the entrypoint script executable
+chmod +x docker-entrypoint.sh
+
+# Build and run with Docker Compose
+docker-compose up --build

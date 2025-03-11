@@ -12,10 +12,8 @@ import EntryForm from "./Pages/EntryForm";
 import ChangePassword from "./Pages/ChangePassword";
 import Profile from "./Pages/Profile";
 
-// Set the base URL
-axios.defaults.baseURL = 'https://api.sukrtya.in';
-//axios.defaults.baseURL = 'https://sukrtya.api.nitag.in';
-//axios.defaults.baseURL = 'http://localhost:8081';
+// Set axios default baseURL from environment variable
+axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
 // Optional: Set other defaults, like headers
 //axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';
