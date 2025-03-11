@@ -579,22 +579,22 @@ export default function EntryForm() {
         facilityNIN: myObject.facilityNin,
         postAnswer: constructPostAnswers(answers, questions),
       };
-      console.log(
-        "formId : " +
-          formId +
-          " || transActionId : " +
-          transActionId +
-          " || user : " +
-          user +
-          " || approvalStatus : " +
-          approvalStatus +
-          " || lat : " +
-          lat +
-          " || lon : " +
-          lon +
-          " || gaddress : " +
-          gaddress
-      );
+      // console.log(
+      //   "formId : " +
+      //     formId +
+      //     " || transActionId : " +
+      //     transActionId +
+      //     " || user : " +
+      //     user +
+      //     " || approvalStatus : " +
+      //     approvalStatus +
+      //     " || lat : " +
+      //     lat +
+      //     " || lon : " +
+      //     lon +
+      //     " || gaddress : " +
+      //     gaddress
+      // );
 
       if (
         localStorage.getItem("isApprover") === "0" ||
@@ -631,7 +631,7 @@ export default function EntryForm() {
           postData,
           token
         );
-        console.log(postData);
+        //console.log(postData);
 
         await fetchData(
           "/sukrtya/api/form-approval/auditTrail",

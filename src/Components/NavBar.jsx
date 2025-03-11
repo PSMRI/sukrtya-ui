@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
 export default function NavBar() {
@@ -9,70 +9,132 @@ export default function NavBar() {
   );
   const location = useLocation();
   const [data, setData] = useState([]);
+  const navigate = useNavigate();
+
+  // Session check interval in milliseconds (e.g., every 5 minutes)
+  const SESSION_CHECK_INTERVAL = 5 * 60 * 1000;
+
+  const handleSessionExpired = useCallback(() => {
+    localStorage.clear();
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
+  const checkAuthToken = useCallback(() => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      handleSessionExpired();
+      return false;
+    }
+    return true;
+  }, [handleSessionExpired]);
+
+  const fetchLabel = async () => {
+    try {
+      if (!checkAuthToken()) return;
+
+      const labelResponse = await axios.get(
+        `/sukrtya/api/language-labels/getLabels?formId=6&regLId=${localStorage.getItem(
+          "language"
+        )}`
+      );
+
+      setLabels(labelResponse.data[0]);
+    } catch (error) {
+      console.error("Error fetching labels:", error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        handleSessionExpired();
+      }
+    }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      if (!checkAuthToken()) return;
+
+      const token = localStorage.getItem("authToken");
+      const profileResponse = await axios.post(
+        "/sukrtya/api/get-profile",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (profileResponse.data.status === "success") {
+        setData(profileResponse.data);
+      } else {
+        handleSessionExpired();
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        handleSessionExpired();
+      }
+    }
+  };
 
   useEffect(() => {
-    const fetchLabel = async () => {
-      try {
-        const labelResponse = await axios.get(
-          `/sukrtya/api/language-labels/getLabels?formId=6&regLId=${localStorage.getItem(
-            "language"
-          )}`
-        );
-
-        setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
-      } catch (error) {
-        console.error("Error fetching labels:", error);
-      }
-    };
-
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        const profileResponse = await axios.post(
-          "/sukrtya/api/get-profile",
-          {}, // Empty request body if no data needs to be sent
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setData(profileResponse.data);
-        if (profileResponse.data.status !== "success") {
-          alert("Session expired. Please log in again.");
-          localStorage.removeItem("authToken"); // Clear the token
-          navigate("/login");
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      }
-    };
-
+    // Initial fetch
     fetchProfile();
     fetchLabel();
-  }, []);
 
-  const navigate = useNavigate();
+    // Set up periodic session check
+    const sessionCheckInterval = setInterval(() => {
+      fetchProfile();
+    }, SESSION_CHECK_INTERVAL);
+
+    // Set up axios interceptor for global error handling
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          handleSessionExpired();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Cleanup
+    return () => {
+      clearInterval(sessionCheckInterval);
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [handleSessionExpired]);
+
   const handleLogout = () => {
     const confirmLogout = window.confirm(
       labels[12] || "Are you sure you want to log out?"
     );
     if (confirmLogout) {
-      localStorage.clear();
-      window.location.href = "/"; // Adjust the URL as needed
+      try {
+        // Call logout API if available
+        localStorage.clear();
+        navigate("/login", { replace: true });
+      } catch (error) {
+        console.error("Error during logout:", error);
+        localStorage.clear();
+        navigate("/login", { replace: true });
+      }
     }
   };
+
   const handleDashboard = () => {
+    if (!checkAuthToken()) return;
+    
     navigate("/dashboard", {
       state: {
         userId: localStorage.getItem("userID"),
-        regLid: 1,
+        regLid: localStorage.getItem("language"),
         mappingUserId: localStorage.getItem("userID"),
       },
     });
   };
 
   const handleLanguageChange = () => {
+    if (!checkAuthToken()) return;
+
     const newLanguage = localStorage.getItem("language") === "1" ? "2" : "1";
     localStorage.setItem("language", newLanguage);
     window.location.reload();
@@ -130,7 +192,7 @@ export default function NavBar() {
                 aria-labelledby="profileDropdown"
               >
                 <a className="dropdown-item">
-                <i className="ti-user text-primary"></i>
+                  <i className="ti-user text-primary"></i>
                   {data.message ? (
                     <div className="text-success">{data.message}</div>
                   ) : (
@@ -147,10 +209,10 @@ export default function NavBar() {
                   {labels[2] || "Profile"}
                 </Link>
 
-                <a className="dropdown-item" onClick={handleLogout}>
+                <button className="dropdown-item" onClick={handleLogout}>
                   <i className="ti-power-off text-danger"></i>
                   <span className="text-danger"> {labels[3] || "Logout"}</span>
-                </a>
+                </button>
               </div>
             </li>
           </ul>

@@ -1,32 +1,56 @@
 import React from 'react';
-import { BrowserRouter } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import './index.css';
-import ReactDOM from "react-dom";
+import { createRoot } from 'react-dom/client';
 import App from './App';
- 
 import axios from 'axios';
+import Login from "./Pages/Login";
+import Dashboard from "./Pages/Dashboard";
+import FacilityTrans from "./Pages/FacilityTrans";
+import ForgotPassword from "./Pages/ForgotPassword.jsx";
+import EntryForm from "./Pages/EntryForm";
+import ChangePassword from "./Pages/ChangePassword";
+import Profile from "./Pages/Profile";
 
 // Set the base URL
-axios.defaults.baseURL = 'https://api.sukrtya.in';
-//axios.defaults.baseURL = 'https://sukrtya.api.nitag.in';
-//axios.defaults.baseURL = 'http://localhost:8080';
+//axios.defaults.baseURL = 'https://api.sukrtya.in';
+axios.defaults.baseURL = 'https://sukrtya.api.nitag.in';
+//axios.defaults.baseURL = 'http://localhost:8081';
 
 // Optional: Set other defaults, like headers
 //axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';
 //axios.defaults.headers.post['Content-Type'] = 'application/json';
 //axios.defaults.withCredentials = true;
- 
- 
 
- 
- 
-const rootNode = document.getElementById('root');
-ReactDOM.render(
-  <BrowserRouter>
-    
-    <App />
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <App />,
+    children: [
+      { index: true, element: <Login /> },
+      { path: "login", element: <Login /> },
+      { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "dashboard", element: <Dashboard /> },
+      { path: "facility-trans", element: <FacilityTrans /> },
+      { path: "entry-form", element: <EntryForm /> },
+      { path: "profile", element: <Profile /> },
+      { path: "change-password", element: <ChangePassword /> }
+    ]
+  }
+], {
+  future: {
+    v7_startTransition: true,
+    v7_relativeSplatPath: true
+  }
+});
 
-  </BrowserRouter>
-  , rootNode);
+const container = document.getElementById('root');
+const root = createRoot(container);
+
+root.render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>
+);
 
  
