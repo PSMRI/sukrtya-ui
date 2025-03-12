@@ -1,37 +1,54 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import './index.css';
+import { createRoot } from 'react-dom/client';
 import App from './App';
-import { QueryClient, QueryClientProvider } from 'react-query';
- 
+import axios from 'axios';
+import Login from "./Pages/Login";
+import Dashboard from "./Pages/Dashboard";
+import FacilityTrans from "./Pages/FacilityTrans";
+import ForgotPassword from "./Pages/ForgotPassword.jsx";
+import EntryForm from "./Pages/EntryForm";
+import ChangePassword from "./Pages/ChangePassword";
+import Profile from "./Pages/Profile";
 
+// Set axios default baseURL from environment variable
+axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
-window.globalConfigs = (function () {
-  var getConfig = function (key) {
+// Optional: Set other defaults, like headers
+//axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';
+//axios.defaults.headers.post['Content-Type'] = 'application/json';
+//axios.defaults.withCredentials = true;
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <App />,
+    children: [
+      { index: true, element: <Login /> },
+      { path: "login", element: <Login /> },
+      { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "dashboard", element: <Dashboard /> },
+      { path: "facility-trans", element: <FacilityTrans /> },
+      { path: "entry-form", element: <EntryForm /> },
+      { path: "profile", element: <Profile /> },
+      { path: "change-password", element: <ChangePassword /> }
+    ]
   }
-  return {
-    getConfig
+], {
+  future: {
+    v7_startTransition: true,
+    v7_relativeSplatPath: true
   }
-}())
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 15 * 60 * 1000,
-      cacheTime: 50 * 60 * 1000,
-      retry: false,
-      retryDelay: (attemptIndex) => Infinity
-    }
-  }
-})
+});
 
- 
- 
-const rootNode = document.getElementById('root');
-ReactDOM.render(
-  <QueryClientProvider  client={queryClient}>
-    <App />
-  </QueryClientProvider>
+const container = document.getElementById('root');
+const root = createRoot(container);
 
-  , rootNode);
+root.render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>
+);
 
  
