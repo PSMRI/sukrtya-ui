@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 export default function Footer() {
   return (
@@ -10,9 +11,9 @@ export default function Footer() {
                 </span>
                 <span className="text-muted text-center text-sm-left d-block d-sm-inline-block">
                   Design & Developed by{" "}
-                  <a href="https://www.piramalswasthya.org/" target="_blank">
+                  <Link to="https://www.piramalswasthya.org/" target="_blank">
                     Piramalswasthya
-                  </a>
+                  </Link>
                 </span>
               </div>
               <div className="d-sm-flex justify-content-center justify-content-sm-between"></div>
