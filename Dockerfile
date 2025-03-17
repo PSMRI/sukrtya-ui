@@ -1,28 +1,31 @@
-# Use Node.js Alpine as the base image for a lightweight build
+# Use Node.js Alpine for a lightweight build
 FROM node:20.17.0-alpine AS builder
 
-# Set the working directory
+# Set working directory
 WORKDIR /build
 
-# Copy only package.json and package-lock.json first for better caching
+# Copy package files first for better caching
 COPY package.json package-lock.json ./
 
-# Upgrade npm to the latest stable version
+# Upgrade npm to latest stable version
 RUN npm install -g npm@latest
 
-# Fix react-query conflict by upgrading to @tanstack/react-query
+# Fix dependency issues by uninstalling old react-query and installing the new one
 RUN npm uninstall react-query && npm install @tanstack/react-query
 
-# Install dependencies using --legacy-peer-deps to bypass conflicts
+# Install correct TypeScript version
+RUN npm install typescript@4.9.5 --save-dev
+
+# Install all dependencies using --legacy-peer-deps to avoid conflicts
 RUN npm ci --legacy-peer-deps
 
-# Copy the rest of the app
+# Copy the rest of the project files
 COPY . .
 
 # Build the React app
 RUN npm run build
 
-# Use a lightweight Node.js runtime for running the app
+# Use a lightweight Node.js runtime for deployment
 FROM node:20.17.0-alpine AS runner
 
 # Set working directory
@@ -35,7 +38,7 @@ COPY --from=builder /build/package-lock.json package-lock.json
 COPY --from=builder /build/build ./public/
 COPY --from=builder /build/src ./src/
 
-# Expose port 3000 for React dev server
+# Expose port for development server
 EXPOSE 3000
 
 # Start the application
