@@ -13,7 +13,7 @@ import ChangePassword from "./Pages/ChangePassword";
 import Profile from "./Pages/Profile";
 
 // Set axios default baseURL from environment variable
-axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || 'https://sukrtya.api.nitag.in';
+axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || 'https://dev-api.sukrtya.in';
 
 // Optional: Set other defaults, like headers
 //axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';
