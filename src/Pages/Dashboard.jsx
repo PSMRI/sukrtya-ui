@@ -65,12 +65,19 @@ export default function Dashboard() {
 
   // Memoized handler functions
   const handleSubmit = useCallback((item) => {
+    if(item.assessmentId>0)
+    {
     setLoading(true);
     console.log(item);
     const serializedObject = JSON.stringify(item);
     localStorage.setItem("assessmentID",item.assessmentId);
     navigate("/facility-trans", { state: { object: serializedObject } });
     setLoading(false);
+    }
+    else
+    {
+      alert("Assessment Id not mapped");
+    }
   }, [navigate]);
 
   // Memoized filtered data

@@ -61,13 +61,8 @@ export default function FacilityTrans() {
         );
        // console.log("designation : "+designation)
         setDesignation(designation.data);
-        const facilityTypeId = myObject.facilityTypeId  ; // Default to 0 or appropriate value
-        const facilityId = myObject.facilityId  ;
-        const language = localStorage.getItem("language") || "1"; // Default language ID
-        const assessmentId = localStorage.getItem("AssessmentId") || "1"; // Default assessment ID
-        
         const response = await axios.get(
-          `/sukrtya/api/forms?facilytyType=${facilityTypeId}&FacilityId=${facilityId}&RgLId=${language}&AssessmentId=${assessmentId}`,
+          `/sukrtya/api/forms?facilytyType=${myObject.facilityTypeId}&FacilityId=${myObject.facilityId}&RgLId=${localStorage.getItem("language")}&AssessmentId=${localStorage.getItem("AssessmentId")}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -62,7 +62,6 @@ export default function Login() {
         localStorage.setItem("username", userName);
         localStorage.setItem("language", formData.language);
         localStorage.setItem("isApprover", response.data.user.approvalStatus);
-        localStorage.setItem("assessmentID",assessmentID);
         //alert("Welcome - " + profileName);
         navigate("/dashboard", {
           state: { userId: userID, regLid: formData.language, mappingUserId: userID },
