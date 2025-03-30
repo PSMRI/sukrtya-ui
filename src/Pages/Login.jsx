@@ -47,7 +47,7 @@ export default function Login() {
         }
       );
       //console.log(response.data.token);
-      const { userID, profileName, userName } = response.data.user;
+      const { userID, profileName, userName,assessmentID } = response.data.user;
 
       if (!userName) {
         throw new Error("Token not provided in response");
@@ -62,6 +62,7 @@ export default function Login() {
         localStorage.setItem("username", userName);
         localStorage.setItem("language", formData.language);
         localStorage.setItem("isApprover", response.data.user.approvalStatus);
+        localStorage.setItem("assessmentID",assessmentID);
         //alert("Welcome - " + profileName);
         navigate("/dashboard", {
           state: { userId: userID, regLid: formData.language, mappingUserId: userID },

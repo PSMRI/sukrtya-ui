@@ -46,6 +46,7 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setData(response.data);
+       
       } catch (error) {
         if (error.response?.status === 401) {
           alert("Session expired. Please log in again.");
@@ -65,7 +66,9 @@ export default function Dashboard() {
   // Memoized handler functions
   const handleSubmit = useCallback((item) => {
     setLoading(true);
+    console.log(item);
     const serializedObject = JSON.stringify(item);
+    localStorage.setItem("assessmentID",item.assessmentId);
     navigate("/facility-trans", { state: { object: serializedObject } });
     setLoading(false);
   }, [navigate]);
