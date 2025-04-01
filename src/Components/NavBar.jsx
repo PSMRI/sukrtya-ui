@@ -64,6 +64,9 @@ export default function NavBar() {
 
       if (profileResponse.data.status === "success") {
         setData(profileResponse.data);
+        if (!profileResponse.data.message || profileResponse.data.message.trim() === "") {
+          handleSessionExpired();
+        }
       } else {
         handleSessionExpired();
       }
