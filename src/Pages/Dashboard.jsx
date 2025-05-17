@@ -6,7 +6,15 @@ import axios from "axios";
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userId, regLid, mappingUserId } = location.state;
+ // Fallback to empty object if location.state is undefined/null
+  const { userId, regLid, mappingUserId } = location.state || {};
+
+  // Redirect if required params are missing
+  useEffect(() => {
+    if (!userId || !mappingUserId) {
+      navigate("/login", { replace: true });
+    }
+  }, [userId, mappingUserId, navigate]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [data, setData] = useState([]);
