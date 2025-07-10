@@ -214,14 +214,22 @@ export default function EntryForm() {
     const initialHiddenQuestions = new Set();
 
     questions.forEach((question) => {
-      const { questionId, skipanswer, skipQuestionId } = question;
+      const { questionId, skipanswer, skipQuestionId, questionType } = question;
 
-      // Check if the question has skip logic
       if (skipanswer) {
         const skipAnswers = skipanswer.split("/").map(Number);
+        let answerValue = answers[questionId];
+
+        // For Multi Choice, convert comma separated string to array of numbers
+        if (questionType === "Multi Choice" && typeof answerValue === "string" && answerValue !== "") {
+          answerValue = answerValue.split(",").map(Number);
+        }
 
         // Hide questions initially if their dependent question has not been answered
-        if (!answers[questionId]) {
+        const isAnswered = questionType === "Multi Choice"
+          ? Array.isArray(answerValue) && answerValue.length > 0
+          : !!answerValue;
+        if (!isAnswered) {
           if (skipQuestionId) {
             const startIndex = questions.findIndex(
               (q) => q.questionId === questionId
@@ -229,7 +237,6 @@ export default function EntryForm() {
             const endIndex = questions.findIndex(
               (q) => q.questionId === skipQuestionId
             );
-
             for (let i = startIndex + 1; i < endIndex; i++) {
               initialHiddenQuestions.add(questions[i].questionId);
             }
@@ -237,7 +244,12 @@ export default function EntryForm() {
         }
 
         // Hide questions if the skip condition is met
-        const shouldSkip = skipAnswers.includes(Number(answers[questionId]));
+        let shouldSkip = false;
+        if (questionType === "Multi Choice" && Array.isArray(answerValue)) {
+          shouldSkip = answerValue.some((v) => skipAnswers.includes(v));
+        } else {
+          shouldSkip = skipAnswers.includes(Number(answerValue));
+        }
         if (shouldSkip && skipQuestionId) {
           const startIndex = questions.findIndex(
             (q) => q.questionId === questionId
@@ -245,7 +257,6 @@ export default function EntryForm() {
           const endIndex = questions.findIndex(
             (q) => q.questionId === skipQuestionId
           );
-
           for (let i = startIndex + 1; i < endIndex; i++) {
             initialHiddenQuestions.add(questions[i].questionId);
           }
@@ -311,37 +322,46 @@ export default function EntryForm() {
   }, [questions]);
 
   const handleInputChange = (questionId, value) => {
-    // Sanitize input (basic example)
-    const sanitizedValue = value.replace(/<[^>]*>/g, ""); // Remove HTML tags
-    // Define the allowed pattern (disallow *, <, and >)
-    const allowedPattern = /^[^*<>]*$/;
+    let processedValue = value;
+    // If value is a string, sanitize and validate
+    if (typeof value === "string") {
+      const sanitizedValue = value.replace(/<[^>]*>/g, ""); // Remove HTML tags
+      const allowedPattern = /^[^*<>]*$/;
 
-    if (allowedPattern.test(sanitizedValue)) {
-      // Update answers and clear error for the question
+      if (allowedPattern.test(sanitizedValue)) {
+        processedValue = sanitizedValue;
+        setAnswers((prevAnswers) => ({
+          ...prevAnswers,
+          [questionId]: sanitizedValue,
+        }));
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          [questionId]: null,
+        }));
+      } else {
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          [questionId]:
+            localStorage.getItem("language") === "1"
+              ? "Invalid input detected! Only *, <, and > are not allowed."
+              : "अमान्य इनपुट पाया गया! केवल *, <, और > की अनुमति नहीं है।",
+        }));
+      }
+    } else if (Array.isArray(value)) {
+      // For arrays (Multi Choice), convert to string (comma separated)
+      processedValue = value.join(",");
       setAnswers((prevAnswers) => ({
         ...prevAnswers,
-        [questionId]: sanitizedValue,
+        [questionId]: processedValue,
       }));
-      // Clear the error for the specific question
       setErrors((prevErrors) => ({
         ...prevErrors,
         [questionId]: null,
       }));
-    } else {
-      // Set an error for the specific question
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        [questionId]:
-          localStorage.getItem("language") === "1"
-            ? "Invalid input detected! Only *, <, and > are not allowed."
-            : "अमान्य इनपुट पाया गया! केवल *, <, और > की अनुमति नहीं है।",
-      }));
     }
 
-    // Update the answers state
-    const updatedAnswers = { ...answers, [questionId]: value };
-
-    // Set to manage hidden questions
+    // Update the answers state for skip logic
+    const updatedAnswers = { ...answers, [questionId]: processedValue };
     const initialHiddenQuestions = new Set(hiddenQuestions);
 
     questions.forEach((question) => {
@@ -356,21 +376,32 @@ export default function EntryForm() {
             (q) => q.questionId === question.skipQuestionId
           );
 
-          // If value is empty, hide and clear dependent questions
-          if (!value) {
+          // If value is empty (string or array), hide and clear dependent questions
+          const isEmpty =
+            (typeof processedValue === "string" && !processedValue) ||
+            (Array.isArray(processedValue) && processedValue.length === 0);
+          if (isEmpty) {
             for (let i = startIndex + 1; i < endIndex; i++) {
               const dependentQuestion = questions[i];
               initialHiddenQuestions.add(dependentQuestion.questionId);
-              delete updatedAnswers[dependentQuestion.questionId]; // Clear dependent question's value
+              delete updatedAnswers[dependentQuestion.questionId];
             }
           } else {
             // Otherwise, handle conditional hiding based on skip logic
-            const shouldSkip = skipAnswers.includes(Number(value));
+            let shouldSkip = false;
+            if (typeof processedValue === "string") {
+              // For multi choice, processedValue is a comma separated string
+              // Check if any value matches skipAnswers
+              const selectedValues = processedValue.split(",").map((v) => Number(v));
+              shouldSkip = selectedValues.some((v) => skipAnswers.includes(v));
+            } else if (Array.isArray(processedValue)) {
+              shouldSkip = processedValue.some((v) => skipAnswers.includes(Number(v)));
+            }
             for (let i = startIndex + 1; i < endIndex; i++) {
               const dependentQuestion = questions[i];
               if (shouldSkip) {
                 initialHiddenQuestions.add(dependentQuestion.questionId);
-                delete updatedAnswers[dependentQuestion.questionId]; // Clear value on hide
+                delete updatedAnswers[dependentQuestion.questionId];
               } else {
                 initialHiddenQuestions.delete(dependentQuestion.questionId);
               }
@@ -380,8 +411,8 @@ export default function EntryForm() {
       }
     });
 
-    setAnswers(updatedAnswers); // Update the answers state
-    setHiddenQuestions(initialHiddenQuestions); // Update the hidden questions state
+    setAnswers(updatedAnswers);
+    setHiddenQuestions(initialHiddenQuestions);
   };
 
   const base64ToBlob = (base64, mimeType = "image/jpeg") => {
@@ -502,42 +533,6 @@ export default function EntryForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const apiKey = "L5LgFvW3Tl2opppoJA0XHChNTPlgKKiDb76reivs"; // Replace with your actual API key
-  useEffect(() => {
-    const fetchAddress = async () => {
-      setLoading(true);
-      setError(null); // Reset error state before fetching
-
-      try {
-        const response = await axios.get(
-          `https://api.olamaps.io/places/v1/reverse-geocode`,
-          {
-            params: {
-              latlng: `${latitude},${longitude}`,
-              api_key: apiKey,
-            },
-          }
-        );
-
-        if (response.data && response.data.results) {
-          // Assuming the API response has a results array
-          const formattedAddress =
-            response.data.results[0]?.formatted_address || "Address not found";
-          setAddress(formattedAddress);
-        } else {
-          setAddress("Address not found");
-        }
-      } catch (err) {
-        setError("Failed to fetch address");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (latitude && longitude) {
-      fetchAddress();
-    }
-  }, [latitude, longitude, apiKey]);
 
   const fetchData = async (url, method, data, token) => {
     try {
@@ -646,7 +641,7 @@ export default function EntryForm() {
         );
 
         if (saveResponse.data.status === "success") {
-          if(transActionId !==null && transActionId !=="") {
+          if (transActionId !== null && transActionId !== "") {
             alert("Form updated successfully");
           } else {
             alert("Form submitted successfully");
@@ -834,8 +829,8 @@ export default function EntryForm() {
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label>
-                {questionName}
+              <label  className="font-weight-bold">
+               {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -855,11 +850,12 @@ export default function EntryForm() {
                   <option value="">एक विकल्प चुनें</option>
                 )}
 
-                {questionOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.text}
-                  </option>
-                ))}
+                {questionOptions &&
+                  questionOptions.map((option, idx) => (
+                    <option key={`${option.value}-${idx}`} value={option.value}>
+                      {option.text}
+                    </option>
+                  ))}
               </select>
               {errors[questionId] && (
                 <p className="invalid-feedback">{errors[questionId]}</p>
@@ -868,12 +864,65 @@ export default function EntryForm() {
           </div>
         );
 
+      case "Multi Choice":
+        return (
+          <div className="col-md-6 col-lx-6" key={questionId}>
+            <div className="form-group">
+              <label className="font-weight-bold">
+                 {questionId} - {questionName}
+                {isMandate === "1" && (
+                  <span style={{ color: "red", marginLeft: "5px" }}>*</span>
+                )}
+              </label>
+          
+                {questionOptions &&
+                  questionOptions.map((option, idx) => {
+                    // answers[questionId] is now a comma-separated string, not an array
+                    const selectedValues = typeof answers[questionId] === "string" && answers[questionId] !== ""
+                      ? answers[questionId].split(",")
+                      : [];
+                    return (
+                      <div key={`${option.value}-${idx}`}>
+                        <input
+                          className=""
+                          type="checkbox"
+                          id={`multi-${questionId}-${option.value}`}
+                          checked={selectedValues.includes(String(option.value))}
+                          onChange={(e) => {
+                            let newValue = [...selectedValues];
+                            if (e.target.checked) {
+                              if (!newValue.includes(String(option.value))) {
+                                newValue.push(String(option.value));
+                              }
+                            } else {
+                              newValue = newValue.filter((v) => v !== String(option.value));
+                            }
+                            handleInputChange(questionId, newValue);
+                          }}
+                        />
+                        <label
+                          className=""
+                          htmlFor={`multi-${questionId}-${option.value}`}
+                        >
+                          &nbsp;&nbsp;&nbsp;{option.text}
+                        </label>
+                      </div>
+                    );
+                  })}
+                {errors[questionId] && (
+                  <p className="invalid-feedback">{errors[questionId]}</p>
+                )}
+           
+            </div>
+          </div>
+        );
+
       case "Camera":
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label>
-                {questionName}
+              <label  className="font-weight-bold">
+               {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -933,8 +982,8 @@ export default function EntryForm() {
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label>
-                {questionName}
+              <label  className="font-weight-bold">
+                 {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -973,8 +1022,8 @@ export default function EntryForm() {
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label>
-                {questionName}
+              <label  className="font-weight-bold">
+                 {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1065,7 +1114,7 @@ export default function EntryForm() {
               </div>
             </div>
 
-            {(permissionDenied) ? (
+            {permissionDenied ? (
               <div className="row mt-4">
                 <div className="row-md-4"></div>
                 <div className="row-md-4">
@@ -1074,7 +1123,8 @@ export default function EntryForm() {
                       <img
                         alt="location access"
                         className="img-fluid"
-                        src="./images/enable-location-services-pop-up-permission.png" style={{height: "200px"}}
+                        src="./images/enable-location-services-pop-up-permission.png"
+                        style={{ height: "200px" }}
                       />
                       {error && <h4 style={{ color: "red" }}>{error}</h4>}
                       <button
@@ -1093,7 +1143,8 @@ export default function EntryForm() {
                           marginTop: "10px",
                           padding: "10px",
                           backgroundColor: "#ffcccb",
-                          borderRadius: "5px",textAlign: "left"
+                          borderRadius: "5px",
+                          textAlign: "left",
                         }}
                       >
                         <p>
@@ -1161,8 +1212,7 @@ export default function EntryForm() {
                           </p>
                           <p>
                             Latitude: {latitude}, Longitude: {longitude}
-                            <br />
-                            Full Address: {address}
+                          
                           </p>
 
                           {transActionId == null && (
@@ -1291,46 +1341,59 @@ export default function EntryForm() {
 
                           {cameraPermission === "granted" ? (
                             <>
-<div className="modal-body" style={{ position: 'relative' }}>
-  <Webcam
-    audio={false}
-    videoConstraints={videoConstraints}
-    ref={webcamRef}
-    screenshotFormat="image/jpeg"
-    className="webcam"
-    onUserMedia={handleUserMedia}
-    onUserMediaError={() =>
-      setIsWebcamActive(false)
-    }
-    style={{ width: "100%", height: "auto" }}
-  />
-  <div style={{ 
-    position: 'absolute', 
-    bottom: '30px', 
-    right: '30px', 
-    zIndex: 1000 
-  }}>
-    <button
-      onClick={toggleCamera}
-      type="button"
-      className="btn btn-sm btn-light rounded-circle"
-      style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        width: '40px',
-        height: '40px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
-      title={facingMode === "user" ? "Switch to back camera" : "Switch to front camera"}
-    >
-      <i className="ti-reload" style={{
-        transform: 'scaleX(-1)',
-        fontSize: '20px'
-      }}></i>
-    </button>
-  </div>
-</div>
+                              <div
+                                className="modal-body"
+                                style={{ position: "relative" }}
+                              >
+                                <Webcam
+                                  audio={false}
+                                  videoConstraints={videoConstraints}
+                                  ref={webcamRef}
+                                  screenshotFormat="image/jpeg"
+                                  className="webcam"
+                                  onUserMedia={handleUserMedia}
+                                  onUserMediaError={() =>
+                                    setIsWebcamActive(false)
+                                  }
+                                  style={{ width: "100%", height: "auto" }}
+                                />
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    bottom: "30px",
+                                    right: "30px",
+                                    zIndex: 1000,
+                                  }}
+                                >
+                                  <button
+                                    onClick={toggleCamera}
+                                    type="button"
+                                    className="btn btn-sm btn-light rounded-circle"
+                                    style={{
+                                      backgroundColor:
+                                        "rgba(255, 255, 255, 0.7)",
+                                      width: "40px",
+                                      height: "40px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                    title={
+                                      facingMode === "user"
+                                        ? "Switch to back camera"
+                                        : "Switch to front camera"
+                                    }
+                                  >
+                                    <i
+                                      className="ti-reload"
+                                      style={{
+                                        transform: "scaleX(-1)",
+                                        fontSize: "20px",
+                                      }}
+                                    ></i>
+                                  </button>
+                                </div>
+                              </div>
 
                               <div
                                 className="modal-footer"
