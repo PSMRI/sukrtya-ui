@@ -1,7 +1,25 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import LanguageData from "../Data/LanguageList.json";
 import axios from "axios";
+
+// Safe localStorage helpers
+function safeLocalStorageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+function safeLocalStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    // Optionally log error
+  }
+}
 
 export default function Login() {
   const allowedLanguages = ["1", "2"];
@@ -56,12 +74,12 @@ export default function Login() {
       if (isMounted) {
 
         // Update state only if the component is still mounted
-        localStorage.setItem("authToken", response.data.token);
-        localStorage.setItem("userID", userID);
-        localStorage.setItem("profileName", profileName);
-        localStorage.setItem("username", userName);
-        localStorage.setItem("language", formData.language);
-        localStorage.setItem("isApprover", response.data.user.approvalStatus);
+        safeLocalStorageSet("authToken", response.data.token);
+        safeLocalStorageSet("userID", userID);
+        safeLocalStorageSet("profileName", profileName);
+        safeLocalStorageSet("username", userName);
+        safeLocalStorageSet("language", formData.language);
+        safeLocalStorageSet("isApprover", response.data.user.approvalStatus);
         //alert("Welcome - " + profileName);
         navigate("/dashboard", {
           state: { userId: userID, regLid: formData.language, mappingUserId: userID },
