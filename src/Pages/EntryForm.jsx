@@ -213,37 +213,72 @@ export default function EntryForm() {
 
     const initialHiddenQuestions = new Set();
 
+
+    // Custom skip logic for questionId 2 (Other)
+    const answer2 = answers[2];
+    if (answer2 === "6") {
+      // Show question 3, hide question 4
+      initialHiddenQuestions.delete(3);
+      initialHiddenQuestions.add(4);
+    } else if (answer2 && answer2 !== "6") {
+      // Hide question 3, show question 4
+      initialHiddenQuestions.add(3);
+      initialHiddenQuestions.delete(4);
+    }
+
+    // Custom skip logic for questionId 16 and 18
+    const answer16 = answers[16];
+    const answer18 = answers[18];
+    // If questionId 16 is answered with 10 (नहीं)
+    if (answer16 === "10") {
+      // Show question 18, hide 17
+      initialHiddenQuestions.delete(18);
+      initialHiddenQuestions.add(17);
+      // If question 18 is answered, jump to 122 (hide 19-121)
+      if (answer18) {
+        for (let q of questions) {
+          if (q.questionId > 18 && q.questionId < 122) {
+            initialHiddenQuestions.add(q.questionId);
+          }
+        }
+      }
+    } else if (answer16 === "9") {
+      // If 16 is 'हाँ', hide 18, show 17
+      initialHiddenQuestions.add(18);
+      initialHiddenQuestions.delete(17);
+    }
+
+    // Custom skip logic for questionId 105 and 106
+    const answer105 = answers[105];
+    if (answer105 === "10") {
+      initialHiddenQuestions.delete(106);
+      initialHiddenQuestions.add(107);
+      initialHiddenQuestions.add(108);
+      initialHiddenQuestions.add(109);
+    }
+
+    // Default skip logic for other questions
     questions.forEach((question) => {
       const { questionId, skipanswer, skipQuestionId, questionType } = question;
-
+      if (questionId === 16 || questionId === 18) return; // Already handled above
       if (skipanswer) {
         const skipAnswers = skipanswer.split("/").map(Number);
         let answerValue = answers[questionId];
-
-        // For Multi Choice, convert comma separated string to array of numbers
         if (questionType === "Multi Choice" && typeof answerValue === "string" && answerValue !== "") {
           answerValue = answerValue.split(",").map(Number);
         }
-
-        // Hide questions initially if their dependent question has not been answered
         const isAnswered = questionType === "Multi Choice"
           ? Array.isArray(answerValue) && answerValue.length > 0
           : !!answerValue;
         if (!isAnswered) {
           if (skipQuestionId) {
-            const startIndex = questions.findIndex(
-              (q) => q.questionId === questionId
-            );
-            const endIndex = questions.findIndex(
-              (q) => q.questionId === skipQuestionId
-            );
+            const startIndex = questions.findIndex((q) => q.questionId === questionId);
+            const endIndex = questions.findIndex((q) => q.questionId === question.skipQuestionId);
             for (let i = startIndex + 1; i < endIndex; i++) {
               initialHiddenQuestions.add(questions[i].questionId);
             }
           }
         }
-
-        // Hide questions if the skip condition is met
         let shouldSkip = false;
         if (questionType === "Multi Choice" && Array.isArray(answerValue)) {
           shouldSkip = answerValue.some((v) => skipAnswers.includes(v));
@@ -251,19 +286,14 @@ export default function EntryForm() {
           shouldSkip = skipAnswers.includes(Number(answerValue));
         }
         if (shouldSkip && skipQuestionId) {
-          const startIndex = questions.findIndex(
-            (q) => q.questionId === questionId
-          );
-          const endIndex = questions.findIndex(
-            (q) => q.questionId === skipQuestionId
-          );
+          const startIndex = questions.findIndex((q) => q.questionId === questionId);
+          const endIndex = questions.findIndex((q) => q.questionId === question.skipQuestionId);
           for (let i = startIndex + 1; i < endIndex; i++) {
             initialHiddenQuestions.add(questions[i].questionId);
           }
         }
       }
     });
-
     setHiddenQuestions(initialHiddenQuestions);
   }, [answers, questions]);
 
