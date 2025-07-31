@@ -66,16 +66,19 @@ export default function HeadingData(props) {
         />
         <div style={headingStyle}>
           <div style={detailStyle}>
-            {labels[6] || "State"}: {toTitleCase(props.heading.state)}
+            {labels[6] || "State"}: BIHAR
           </div>
           <div style={detailStyle}>
-            {labels[7] || "District"}: {toTitleCase(props.heading.districtName)}
+            {labels[7] || "District"}: {(localStorage.getItem("selectedDistrictName")) }
           </div>
           <div style={detailStyle}>
-            {labels[8] || "Block"}: {toTitleCase(props.heading.blockName)}
+            {labels[8] || "Block"}: {(localStorage.getItem("selectedBlockName")) || ""}
           </div>
           <div style={detailStyle}>
-            {labels[5] || "Facility Name"}: {toTitleCase(props.heading.facilityName)}
+               Facility   : {(localStorage.getItem("selectedClusterName")) || ""}
+          </div>
+           <div style={detailStyle}>
+               Center   : {(localStorage.getItem("centername")) || ""}
           </div>
         </div>
       </div>
