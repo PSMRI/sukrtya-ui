@@ -72,6 +72,7 @@ export default function FacilityTrans() {
 
         //console.log("API response:", response.data);
         setData(response.data);
+        localStorage.setItem("formID", response.data[0]?.formID || "");  // Store formID in localStorage for later use
       } catch (error) {
         console.error("Error occurred:", error.toJSON ? error.toJSON() : error);
 
@@ -196,19 +197,53 @@ export default function FacilityTrans() {
 
 
 
-            {data && data.length > 0 ? (
-              <div className="row mt-4">
-                <div className="col-md-8">
-                  <div className="row">
+            {data && data.length > 0 ? (<>
+             
+               
+                  <div className="row mt-4">
+                    <div className="col-md-4 grid-margin">
+                      <div className="card h-80" style={{ backgroundColor: "#B4E4FF" }}>
+                        <div className="card-header">
+                          <strong>Add New Survey</strong>
+                        </div>
+                        <div className="card-body" style={{ color: "black", minHeight: "150px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <div className="text-center">
+                            <i className="icon-plus" style={{ fontSize: "40px", marginBottom: "15px" }}></i>
+                            <div>
+                              <strong>Click here to start a new survey assessment</strong>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="card-footer">
+                          <button
+                            style={{ width: "100%" }}
+                            disabled={loading}
+                            onClick={() =>
+                              handleSubmit(
+                                localStorage.getItem("formID"),
+                                myObject.RegLId,
+                                myObject.user,
+                                null,
+                                null,
+                                null,
+                                null
+                              )
+                            }
+                            className="btn btn-dark"
+                          >
+                            {loading ? "Please Wait..." : "Add New"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     {filteredData.map((item, index) => (
-
-                      <div className="col-md-6 grid-margin " key={index}>
+                      <div className="col-md-4 grid-margin " key={index}>
 
 
                         {!!item.transactionId ? (
 
                           (item.approvalStatus === 2) ? (
-                            <div className="card " style={{ backgroundColor: "#5DAE8B" }}  >
+                            <div className="card h-80" style={{ backgroundColor: "#5DAE8B" }}  >
                               <div className="card-header">
                                 {labels[7] || "Survey Name"}    :  <strong >  {item.fromName}</strong>
                               </div>
@@ -222,7 +257,7 @@ export default function FacilityTrans() {
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
                                     <a className="text-right" href={`https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`} rel="noreferrer" target="_blank">
-                                      <img title="click here to view on google map" src="./location.png" alt="location" style={{ height: "30px" }} /> </a>
+                                      <img title="click here to view on google map" src="./location.png" alt="location" style={{ height: "30px" }} /></a>click here to view on google map
                                     <small title="entry location" className="text-white" style={{ wordBreak: "break-word" }}>{item.gaddress}</small>
                                   </div>
                                 </div>
@@ -252,7 +287,7 @@ export default function FacilityTrans() {
                               </div>
                             </div>
                           ) : (
-                            <div className="card " style={{ backgroundColor: "#E3F0AF" }}  >
+                            <div className="card h-80" style={{ backgroundColor: "#E3F0AF" }}  >
                               <div className="card-header">
                                 {labels[7] || "Survey Name"}    :  <strong >  {item.fromName}</strong>
                               </div>
@@ -268,13 +303,13 @@ export default function FacilityTrans() {
                                   <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
                                     <a className="text-right" href={`https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`} rel="noreferrer" target="_blank">
                                       <img title="click here to view on google map" src="./location.png" alt="location" style={{ height: "30px" }} /> </a>
-                                    <small title="entry location" className="text-muted" style={{ wordBreak: "break-word" }}>{item.gaddress}</small>
+                                    <small title="entry location" className="text-muted" style={{ wordBreak: "break-word" }}>click here to view on google map</small>
                                   </div>
                                 </div>
-
+{/* 
                                 <h3 className="font-weight-500 mt-1 mb-0 text-center">
                                   <strong className="text-danger">{labels[5] || "Approval Pending"}</strong>
-                                </h3>
+                                </h3> */}
 
 
                               </div>
@@ -299,7 +334,7 @@ export default function FacilityTrans() {
                           )
 
                         ) : (
-                          <div className="card" style={{ backgroundColor: "#FF7676" }}  >
+                          <div className="card h-100" style={{ backgroundColor: "#FF7676" }}  >
                             <div className="card-header">
                               {labels[7] || "Survey Name"}    :  <strong >  {item.fromName}</strong>
                             </div>
@@ -334,8 +369,8 @@ export default function FacilityTrans() {
 
                     ))}
                   </div>
-                </div>
-                <div className="col-md-4">
+               
+                <div className="row">
                   <div className="card">
                     {designation.map((item, index) => (
                       <div className="card-body shadow" key={index}>
@@ -355,8 +390,8 @@ export default function FacilityTrans() {
                   </div>
                 </div>
 
-              </div>
-
+              
+</>
             ) : (
               <div className="text-center">
                 <br /> <br />

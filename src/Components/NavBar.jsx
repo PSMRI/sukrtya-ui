@@ -157,7 +157,7 @@ export default function NavBar() {
         </div>
         <div className="navbar-menu-wrapper d-flex align-items-center justify-content-end">
           <ul className="navbar-nav navbar-nav-right">
-            <li className="nav-item dropdown">
+            {/* <li className="nav-item dropdown">
               <button
                 className="language-toggle-button"
                 onClick={handleLanguageChange}
@@ -179,7 +179,7 @@ export default function NavBar() {
                   हिंदी
                 </span>
               </button>
-            </li>
+            </li> */}
 
             <li className="nav-item nav-profile dropdown">
               <a

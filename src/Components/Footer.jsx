@@ -15,7 +15,7 @@ export default function Footer() {
                   </a>
                 </span>
               </div>
-              <div className="d-sm-flex justify-content-center justify-content-sm-between">last update on 01-Aug-2025 06:00PM</div>
+              <div className="d-sm-flex justify-content-center justify-content-sm-between">last update on 15-Aug-2025</div>
             </footer>
     </>
   )

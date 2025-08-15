@@ -213,7 +213,6 @@ export default function EntryForm() {
 
     const initialHiddenQuestions = new Set();
 
-
     // Custom skip logic for questionId 2 (Other)
     const answer2 = answers[2];
     if (answer2 === "6") {
@@ -264,16 +263,25 @@ export default function EntryForm() {
       if (skipanswer) {
         const skipAnswers = skipanswer.split("/").map(Number);
         let answerValue = answers[questionId];
-        if (questionType === "Multi Choice" && typeof answerValue === "string" && answerValue !== "") {
+        if (
+          questionType === "Multi Choice" &&
+          typeof answerValue === "string" &&
+          answerValue !== ""
+        ) {
           answerValue = answerValue.split(",").map(Number);
         }
-        const isAnswered = questionType === "Multi Choice"
-          ? Array.isArray(answerValue) && answerValue.length > 0
-          : !!answerValue;
+        const isAnswered =
+          questionType === "Multi Choice"
+            ? Array.isArray(answerValue) && answerValue.length > 0
+            : !!answerValue;
         if (!isAnswered) {
           if (skipQuestionId) {
-            const startIndex = questions.findIndex((q) => q.questionId === questionId);
-            const endIndex = questions.findIndex((q) => q.questionId === question.skipQuestionId);
+            const startIndex = questions.findIndex(
+              (q) => q.questionId === questionId
+            );
+            const endIndex = questions.findIndex(
+              (q) => q.questionId === question.skipQuestionId
+            );
             for (let i = startIndex + 1; i < endIndex; i++) {
               initialHiddenQuestions.add(questions[i].questionId);
             }
@@ -286,8 +294,12 @@ export default function EntryForm() {
           shouldSkip = skipAnswers.includes(Number(answerValue));
         }
         if (shouldSkip && skipQuestionId) {
-          const startIndex = questions.findIndex((q) => q.questionId === questionId);
-          const endIndex = questions.findIndex((q) => q.questionId === question.skipQuestionId);
+          const startIndex = questions.findIndex(
+            (q) => q.questionId === questionId
+          );
+          const endIndex = questions.findIndex(
+            (q) => q.questionId === question.skipQuestionId
+          );
           for (let i = startIndex + 1; i < endIndex; i++) {
             initialHiddenQuestions.add(questions[i].questionId);
           }
@@ -422,10 +434,14 @@ export default function EntryForm() {
             if (typeof processedValue === "string") {
               // For multi choice, processedValue is a comma separated string
               // Check if any value matches skipAnswers
-              const selectedValues = processedValue.split(",").map((v) => Number(v));
+              const selectedValues = processedValue
+                .split(",")
+                .map((v) => Number(v));
               shouldSkip = selectedValues.some((v) => skipAnswers.includes(v));
             } else if (Array.isArray(processedValue)) {
-              shouldSkip = processedValue.some((v) => skipAnswers.includes(Number(v)));
+              shouldSkip = processedValue.some((v) =>
+                skipAnswers.includes(Number(v))
+              );
             }
             for (let i = startIndex + 1; i < endIndex; i++) {
               const dependentQuestion = questions[i];
@@ -563,7 +579,6 @@ export default function EntryForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-
   const fetchData = async (url, method, data, token) => {
     try {
       const response = await axios({
@@ -596,10 +611,11 @@ export default function EntryForm() {
       const token = localStorage.getItem("authToken");
       const userId = localStorage.getItem("userID");
       const profileName = localStorage.getItem("profileName");
-
+      //console.log("user--" + userId);
       const postData = {
         transactionId: transActionId,
-        userId: user === null ? userId : user,
+        userId: userId,
+        facilityId: myObject.facilityId,
         formId,
         facilityNIN: myObject.facilityNin,
         postAnswer: constructPostAnswers(answers, questions),
@@ -650,6 +666,7 @@ export default function EntryForm() {
       }
 
       try {
+       // console.log("Submitting data:", postData);
         const saveResponse = await fetchData(
           "/sukrtya/api/assessments/save",
           "post",
@@ -859,8 +876,8 @@ export default function EntryForm() {
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label  className="font-weight-bold">
-               {questionId} - {questionName}
+              <label className="font-weight-bold">
+                {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -899,50 +916,53 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                 {questionId} - {questionName}
+                {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
               </label>
-          
-                {questionOptions &&
-                  questionOptions.map((option, idx) => {
-                    // answers[questionId] is now a comma-separated string, not an array
-                    const selectedValues = typeof answers[questionId] === "string" && answers[questionId] !== ""
+
+              {questionOptions &&
+                questionOptions.map((option, idx) => {
+                  // answers[questionId] is now a comma-separated string, not an array
+                  const selectedValues =
+                    typeof answers[questionId] === "string" &&
+                    answers[questionId] !== ""
                       ? answers[questionId].split(",")
                       : [];
-                    return (
-                      <div key={`${option.value}-${idx}`}>
-                        <input
-                          className=""
-                          type="checkbox"
-                          id={`multi-${questionId}-${option.value}`}
-                          checked={selectedValues.includes(String(option.value))}
-                          onChange={(e) => {
-                            let newValue = [...selectedValues];
-                            if (e.target.checked) {
-                              if (!newValue.includes(String(option.value))) {
-                                newValue.push(String(option.value));
-                              }
-                            } else {
-                              newValue = newValue.filter((v) => v !== String(option.value));
+                  return (
+                    <div key={`${option.value}-${idx}`}>
+                      <input
+                        className=""
+                        type="checkbox"
+                        id={`multi-${questionId}-${option.value}`}
+                        checked={selectedValues.includes(String(option.value))}
+                        onChange={(e) => {
+                          let newValue = [...selectedValues];
+                          if (e.target.checked) {
+                            if (!newValue.includes(String(option.value))) {
+                              newValue.push(String(option.value));
                             }
-                            handleInputChange(questionId, newValue);
-                          }}
-                        />
-                        <label
-                          className=""
-                          htmlFor={`multi-${questionId}-${option.value}`}
-                        >
-                          &nbsp;&nbsp;&nbsp;{option.text}
-                        </label>
-                      </div>
-                    );
-                  })}
-                {errors[questionId] && (
-                  <p className="invalid-feedback">{errors[questionId]}</p>
-                )}
-           
+                          } else {
+                            newValue = newValue.filter(
+                              (v) => v !== String(option.value)
+                            );
+                          }
+                          handleInputChange(questionId, newValue);
+                        }}
+                      />
+                      <label
+                        className=""
+                        htmlFor={`multi-${questionId}-${option.value}`}
+                      >
+                        &nbsp;&nbsp;&nbsp;{option.text}
+                      </label>
+                    </div>
+                  );
+                })}
+              {errors[questionId] && (
+                <p className="invalid-feedback">{errors[questionId]}</p>
+              )}
             </div>
           </div>
         );
@@ -951,8 +971,8 @@ export default function EntryForm() {
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label  className="font-weight-bold">
-               {questionId} - {questionName}
+              <label className="font-weight-bold">
+                {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1012,8 +1032,8 @@ export default function EntryForm() {
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label  className="font-weight-bold">
-                 {questionId} - {questionName}
+              <label className="font-weight-bold">
+                {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1052,8 +1072,8 @@ export default function EntryForm() {
         return (
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
-              <label  className="font-weight-bold">
-                 {questionId} - {questionName}
+              <label className="font-weight-bold">
+                {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1242,10 +1262,9 @@ export default function EntryForm() {
                           </p>
                           <p>
                             Latitude: {latitude}, Longitude: {longitude}
-                          
                           </p>
 
-                          {transActionId == null && (
+                          {transActionId == null ? (
                             <button
                               style={{ width: "200px" }}
                               disabled={loading}
@@ -1272,8 +1291,7 @@ export default function EntryForm() {
                                 labels[7] || "Submit"
                               )}
                             </button>
-                          )}
-                          {transActionId !== null && approvalStatus !== 2 && (
+                          ) : (
                             <button
                               style={{ width: "200px" }}
                               className="btn btn-warning mr-2 mt-2"

@@ -21,6 +21,11 @@ export default function Dashboard() {
   const [labels, setLabels] = useState({});
   const [errors, setErrors] = useState({});
   
+  // Loading states for dropdowns
+  const [districtLoading, setDistrictLoading] = useState(true);
+  const [blockLoading, setBlockLoading] = useState(false);
+  const [facilityLoading, setFacilityLoading] = useState(false);
+  
   // States for hierarchical selection
   const [states] = useState([{ code: "10", name: "BIHAR" }]);
   const [selectedState, setSelectedState] = useState("10");
@@ -31,13 +36,31 @@ export default function Dashboard() {
   const [clusters, setClusters] = useState([]);
   const [selectedCluster, setSelectedCluster] = useState(null);
   const [facilities, setFacilities] = useState([]);
+
+  // Reset selections on component mount/refresh
+  useEffect(() => {
+    setSelectedDistrict(null);
+    setSelectedBlock(null);
+    setSelectedCluster(null);
+    setBlocks([]);
+    setClusters([]);
+    setFacilities([]);
+  }, []);
   
+  // Clear localStorage on initial load/refresh
+  useEffect(() => {
+    localStorage.removeItem("selectedDistrictName");
+    localStorage.removeItem("selectedBlockName");
+    localStorage.removeItem("selectedBlockCode");
+    localStorage.removeItem("selectedClusterName");
+  }, []);
+
   // Selected names for display
   const [selectedNames, setSelectedNames] = useState(() => ({
-    state: localStorage.getItem("selectedStateName") || "BIHAR",
-    district: localStorage.getItem("selectedDistrictName") || "",
-    block: localStorage.getItem("selectedBlockName") || "",
-    cluster: localStorage.getItem("selectedClusterName") || ""
+    state: "BIHAR",
+    district: "",
+    block: "",
+    cluster: ""
   }));
 
   // Memoized API endpoints
@@ -67,6 +90,7 @@ export default function Dashboard() {
   // Fetch facilities data
   useEffect(() => {
     const fetchData = async () => {
+      setDistrictLoading(true);
       try {
         const token = localStorage.getItem("authToken");
         const response = await axios.get(facilitiesEndpoint, {
@@ -82,6 +106,7 @@ export default function Dashboard() {
           }));
           setDistricts(districtList);
         }
+        setDistrictLoading(false);
        
       } catch (error) {
         if (error.response?.status === 401) {
@@ -102,22 +127,41 @@ export default function Dashboard() {
   // Effect for updating blocks when district is selected
   useEffect(() => {
     if (selectedDistrict && data.length > 0) {
-      const district = data[0].mappedFacilities.find(d => d.districtCode === selectedDistrict);
-      if (district) {
-        setBlocks(district.blocks);
-        setSelectedBlock(null);
-        setClusters([]);
-        setSelectedCluster(null);
-        setFacilities([]);
-        localStorage.setItem("selectedDistrictName", district.districtName);
-        localStorage.removeItem("selectedBlockName");
-        localStorage.removeItem("selectedClusterName");
-        setSelectedNames(prev => ({
+      setBlockLoading(true);
+      try {
+        const district = data[0].mappedFacilities.find(d => d.districtCode === selectedDistrict);
+        if (district) {
+          // Ensure blocks data exists and is an array
+          const blocksData = district.blocks || [];
+          setBlocks(blocksData);
+          
+          // Reset block and facility selections when district changes
+          setSelectedBlock(null);
+          setClusters([]);
+          setSelectedCluster(null);
+          setFacilities([]);
+          setSelectedNames(prev => ({
+            ...prev,
+            district: district.districtName,
+            block: "",
+            cluster: ""
+          }));
+          
+          // Update localStorage
+          localStorage.setItem("selectedDistrictName", district.districtName);
+          localStorage.removeItem("selectedBlockName");
+          localStorage.removeItem("selectedBlockCode");
+          localStorage.removeItem("selectedClusterName");
+        }
+      } catch (error) {
+        console.error("Error processing block data:", error);
+        setErrors(prev => ({
           ...prev,
-          district: district.districtName,
-          block: "",
-          cluster: ""
+          block: "Error loading blocks. Please try again."
         }));
+        setBlocks([]);
+      } finally {
+        setBlockLoading(false);
       }
     }
   }, [selectedDistrict, data]);
@@ -145,6 +189,7 @@ export default function Dashboard() {
   // Effect for updating facilities when cluster is selected
   useEffect(() => {
     if (selectedCluster && selectedBlock && selectedDistrict && data.length > 0) {
+      setFacilityLoading(true);
       const district = data[0].mappedFacilities.find(d => d.districtCode === selectedDistrict);
       if (district) {
         const block = district.blocks.find(b => b.blockCode === selectedBlock);
@@ -159,6 +204,7 @@ export default function Dashboard() {
           }
         }
       }
+      setFacilityLoading(false);
     }
   }, [selectedCluster, selectedBlock, selectedDistrict, data]);
 
@@ -174,7 +220,7 @@ export default function Dashboard() {
         facilityTypeId: Number(item.facilityTypeId || item.facilityTypeCode === "HSC-HWC" ? 8 : 8) // Set 8 for HSC-HWC, otherwise 0
       };
 
-      console.log('Facility Data:', facilityData);
+      //console.log('Facility Data:', facilityData);
       const serializedObject = JSON.stringify(facilityData);
       localStorage.setItem("assessmentID", facilityData.assessmentId.toString());
       localStorage.setItem("centername", item.facilityName);
@@ -185,17 +231,24 @@ export default function Dashboard() {
 
   // Memoized filtered data
   const filteredData = useMemo(() => {
-    const searchLower = searchText.toLowerCase();
-    const dataToFilter = selectedCluster ? facilities : data;
+    if (!selectedCluster || !facilities.length) return [];
     
-    return dataToFilter.filter((item) =>
-      Object.values(item).some(
-        (value) =>
-          typeof value === "string" &&
-          value.toLowerCase().includes(searchLower)
-      )
-    );
-  }, [data, searchText, selectedCluster, facilities]);
+    const searchLower = searchText.toLowerCase();
+    return facilities.filter((facility) => {
+      const searchableFields = [
+        facility.facilityName,
+        facility.facilityNin,
+        selectedNames.state,
+        selectedNames.district,
+        selectedNames.block,
+        selectedNames.cluster
+      ];
+      
+      return searchableFields.some(field => 
+        field && field.toString().toLowerCase().includes(searchLower)
+      );
+    });
+  }, [searchText, facilities, selectedNames, selectedCluster]);
 
   // Memoized user info
   const userInfo = useMemo(() => ({
@@ -245,10 +298,16 @@ export default function Dashboard() {
                 </div>
                 <p className="text-right">
                   <small>
-                    {filteredData.length > 0 ? (
-                      <span className="text-success">Found {filteredData.length} item(s)</span>
+                    {selectedCluster ? (
+                      filteredData.length > 0 ? (
+                        <span className="text-success">Found {filteredData.length} VHSND Center(s)</span>
+                      ) : searchText ? (
+                        <span className="text-danger">No VHSND center found matching "{searchText}"</span>
+                      ) : (
+                        <span className="text-info">Total {facilities.length} VHSND Centers</span>
+                      )
                     ) : (
-                      <span className="text-danger">No items found</span>
+                      <span className="text-warning">Please select a facility to see results</span>
                     )}
                   </small>
                 </p>
@@ -288,21 +347,49 @@ export default function Dashboard() {
                     value={selectedDistrict || ''}
                     onChange={(e) => {
                       const value = e.target.value;
-                      const districtName = districts.find(d => d.code === value)?.name || "";
-                      setSelectedDistrict(value);
-                      setSelectedNames(prev => ({
-                        ...prev,
-                        district: districtName,
-                        block: "",
-                        cluster: ""
-                      }));
-                      localStorage.setItem("selectedDistrictName", districtName);
-                      localStorage.removeItem("selectedBlockName");
-                      localStorage.removeItem("selectedClusterName");
+                      if (!value) {
+                        // If "Select District" is chosen
+                        setSelectedDistrict(null);
+                        setSelectedBlock(null);
+                        setSelectedCluster(null);
+                        setBlocks([]);
+                        setClusters([]);
+                        setFacilities([]);
+                        setSelectedNames(prev => ({
+                          ...prev,
+                          district: "",
+                          block: "",
+                          cluster: ""
+                        }));
+                        localStorage.removeItem("selectedDistrictName");
+                        localStorage.removeItem("selectedBlockName");
+                        localStorage.removeItem("selectedBlockCode");
+                        localStorage.removeItem("selectedClusterName");
+                      } else {
+                        // If a specific district is chosen
+                        const districtName = districts.find(d => d.code === value)?.name || "";
+                        setSelectedDistrict(value);
+                        setSelectedBlock(null);
+                        setSelectedCluster(null);
+                        setBlocks([]);
+                        setClusters([]);
+                        setFacilities([]);
+                        setSelectedNames(prev => ({
+                          ...prev,
+                          district: districtName,
+                          block: "",
+                          cluster: ""
+                        }));
+                        localStorage.setItem("selectedDistrictName", districtName);
+                        localStorage.removeItem("selectedBlockName");
+                        localStorage.removeItem("selectedBlockCode");
+                        localStorage.removeItem("selectedClusterName");
+                      }
                     }}
+                    disabled={districtLoading}
                   >
-                    <option value="">Select District</option>
-                    {districts.map(district => (
+                    <option value="">{districtLoading ? "Loading districts..." : "Select District"}</option>
+                    {!districtLoading && districts.map(district => (
                       <option key={district.code} value={district.code}>
                         {district.name}
                       </option>
@@ -313,30 +400,73 @@ export default function Dashboard() {
               <div className="col-md-3">
                 <div className="form-group">
                   <label>Select Block</label>
-                  <select 
-                    className="form-control"
-                    value={selectedBlock || ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      const blockName = blocks.find(b => b.blockCode === value)?.blockName || "";
-                      setSelectedBlock(value);
-                      setSelectedNames(prev => ({
-                        ...prev,
-                        block: blockName,
-                        cluster: ""
-                      }));
-                      localStorage.setItem("selectedBlockName", blockName);
-                      localStorage.removeItem("selectedClusterName");
-                    }}
-                    disabled={!selectedDistrict}
-                  >
-                    <option value="">Select Block</option>
-                    {blocks.map(block => (
-                      <option key={block.blockCode} value={block.blockCode}>
-                        {block.blockName}
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <select 
+                      className={`form-control ${errors.block ? 'is-invalid' : ''}`}
+                      value={selectedBlock || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Clear any existing errors
+                        setErrors(prev => ({ ...prev, block: null }));
+                        try {
+                          if (!value) {
+                            // If "Select Block" is chosen
+                            setSelectedBlock(null);
+                            setClusters([]);
+                            setSelectedCluster(null);
+                            setFacilities([]);
+                            setSelectedNames(prev => ({
+                              ...prev,
+                              block: "",
+                              cluster: ""
+                            }));
+                            localStorage.removeItem("selectedBlockName");
+                            localStorage.removeItem("selectedBlockCode");
+                            localStorage.removeItem("selectedClusterName");
+                          } else {
+                            // If a specific block is chosen
+                            const selectedBlockData = blocks.find(b => b.blockCode === value);
+                            const blockName = selectedBlockData?.blockName || "";
+                            
+                            // Update block selection
+                            setSelectedBlock(value);
+                            setClusters([]);
+                            setSelectedCluster(null);
+                            setFacilities([]);
+                            setSelectedNames(prev => ({
+                              ...prev,
+                              block: blockName,
+                              cluster: ""
+                            }));
+                            
+                            // Persist block selection
+                            localStorage.setItem("selectedBlockName", blockName);
+                            localStorage.setItem("selectedBlockCode", value);
+                            localStorage.removeItem("selectedClusterName");
+                          }
+                        } catch (error) {
+                          console.error("Error selecting block:", error);
+                          setErrors(prev => ({
+                            ...prev,
+                            block: "Error selecting block. Please try again."
+                          }));
+                        }
+                      }}
+                      disabled={!selectedDistrict || blockLoading}
+                    >
+                      <option value="">{blockLoading ? "Loading blocks..." : "Select Block"}</option>
+                      {!blockLoading && blocks.map(block => (
+                        <option key={block.blockCode} value={block.blockCode}>
+                          {block.blockName}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.block && (
+                      <div className="invalid-feedback d-block">
+                        {errors.block}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="col-md-3">
@@ -346,19 +476,30 @@ export default function Dashboard() {
                     className="form-control"
                     value={selectedCluster || ''}
                     onChange={(e) => {
-                      const value = Number(e.target.value);
-                      const clusterName = clusters.find(c => c.clusterId === value)?.clusterName || "";
-                      setSelectedCluster(value);
-                      setSelectedNames(prev => ({
-                        ...prev,
-                        cluster: clusterName
-                      }));
-                      localStorage.setItem("selectedClusterName", clusterName);
+                      const value = e.target.value ? Number(e.target.value) : '';
+                      if (!value) {
+                        // If "Select Facility" is chosen
+                        setSelectedCluster(null);
+                        setSelectedNames(prev => ({
+                          ...prev,
+                          cluster: ""
+                        }));
+                        localStorage.removeItem("selectedClusterName");
+                      } else {
+                        // If a specific facility is chosen
+                        const clusterName = clusters.find(c => c.clusterId === value)?.clusterName || "";
+                        setSelectedCluster(value);
+                        setSelectedNames(prev => ({
+                          ...prev,
+                          cluster: clusterName
+                        }));
+                        localStorage.setItem("selectedClusterName", clusterName);
+                      }
                     }}
-                    disabled={!selectedBlock}
+                    disabled={!selectedBlock || facilityLoading}
                   >
-                    <option value="">Select Facility</option>
-                    {clusters.map(cluster => (
+                    <option value="">{facilityLoading ? "Loading facilities..." : "Select Facility"}</option>
+                    {!facilityLoading && clusters.map(cluster => (
                       <option key={cluster.clusterId} value={cluster.clusterId}>
                         {cluster.clusterName}
                       </option>
@@ -369,18 +510,18 @@ export default function Dashboard() {
             </div>
             
             <div className="row mt-3">
-              <div className="col-12">
-                <div className="alert alert-info">
-                  <strong>Selected Location: </strong>
-                  {selectedNames.state}
-                  {selectedNames.district && ` > ${selectedNames.district}`}
-                  {selectedNames.block && ` > ${selectedNames.block}`}
-                  {selectedNames.cluster && ` > ${selectedNames.cluster}`}
+                <div className="col-12">
+                  <div className="alert alert-info">
+                    <strong>Selected Location: </strong>
+                    BIHAR
+                    {selectedNames.district && ` > ${selectedNames.district}`}
+                    {selectedNames.block && ` > ${selectedNames.block}`}
+                    {selectedNames.cluster && ` > ${selectedNames.cluster}`}
+                  </div>
                 </div>
               </div>
-            </div>
             <div className="row mt-2">
-              {selectedCluster && facilities.map((item, index) => (
+              {selectedCluster && filteredData.map((item, index) => (
                 <div className="col-md-4 mb-4" key={item.facilityNin || index}>
                   <div className="card rounded" style={{ backgroundColor: "#FBF6E9" }}>
                     <nav className="navbar">
