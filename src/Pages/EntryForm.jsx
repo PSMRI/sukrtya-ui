@@ -666,7 +666,7 @@ export default function EntryForm() {
       }
 
       try {
-       // console.log("Submitting data:", postData);
+        // console.log("Submitting data:", postData);
         const saveResponse = await fetchData(
           "/sukrtya/api/assessments/save",
           "post",
@@ -877,7 +877,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                {questionId} - {questionName}
+                  {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -916,7 +916,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                {questionId} - {questionName}
+                 {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -972,7 +972,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                {questionId} - {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1033,7 +1033,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                {questionId} - {questionName}
+                 {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1073,7 +1073,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                {questionId} - {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1252,99 +1252,37 @@ export default function EntryForm() {
                           </h6>
                         )}
 
-                      {latitude && longitude ? (
-                        <>
-                          <p>
+                      {transActionId != null    ? (
+                        <> <h6>
                             {" "}
-                            <strong>
-                              {labels[33] || "Your Current Location Details"} :
-                            </strong>{" "}
-                          </p>
-                          <p>
-                            Latitude: {latitude}, Longitude: {longitude}
-                          </p>
-
-                          {transActionId == null ? (
-                            <button
-                              style={{ width: "200px" }}
-                              disabled={loading}
-                              className="btn btn-primary mr-2"
-                              type="button"
-                              onClick={handleSubmit}
-                            >
-                              {loading ? (
-                                <span
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "8px",
-                                  }}
-                                >
-                                  <img
-                                    src="./loader.gif"
-                                    alt="PLease wait..."
-                                    style={{ width: "20px", height: "20px" }}
-                                  />
-                                  Please Wait...
-                                </span>
-                              ) : (
-                                labels[7] || "Submit"
-                              )}
-                            </button>
-                          ) : (
-                            <button
-                              style={{ width: "200px" }}
-                              className="btn btn-warning mr-2 mt-2"
-                              type="button"
-                              disabled={loading}
-                              onClick={handleSubmit}
-                            >
-                              {loading ? (
-                                <span
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "8px",
-                                  }}
-                                >
-                                  <img
-                                    src="./loader.gif"
-                                    alt="PLease wait..."
-                                    style={{ width: "20px", height: "20px" }}
-                                  />
-                                  Please Wait...
-                                </span>
-                              ) : (
-                                labels[30] || "Update"
-                              )}
-                            </button>
-                          )}
-
-                          {localStorage.getItem("isApprover") === "2" &&
-                            transActionId !== null &&
-                            approvalStatus !== 2 && (
-                              <button
-                                style={{ width: "200px" }}
-                                className="btn btn-success mr-2 mt-2"
-                                type="button"
-                                disabled={loading}
-                                onClick={handleApproval}
-                              >
-                                {loading
-                                  ? labels[31] || "Approve"
-                                  : labels[31] || "Approve"}
-                              </button>
-                            )}
-                          {localStorage.getItem("isApprover") === "2" &&
-                            approvalStatus === 2 && (
-                              <button
-                                style={{ width: "200px" }}
-                                className="btn btn-danger mr-2 mt-2"
-                                type="button"
-                                disabled={loading}
-                                onClick={handleRevoke}
-                              >
+                            <strong className="text-success">
+                            
+                                Your data already submitted successfully. 
+                            </strong>
+                          </h6> </>
+                      ) : (
+                        <>
+                          {" "}
+                          {latitude && longitude ? (
+                            <>
+                              <p>
                                 {" "}
+                                <strong>
+                                  {labels[33] ||
+                                    "Your Current Location Details"}{" "}
+                                  :
+                                </strong>{" "}
+                              </p>
+                              <p>
+                                Latitude: {latitude}, Longitude: {longitude}
+                              </p>
+                              <button
+                                style={{ width: "200px" }}
+                                disabled={loading}
+                                className="btn btn-primary mr-2"
+                                type="button"
+                                onClick={handleSubmit}
+                              >
                                 {loading ? (
                                   <span
                                     style={{
@@ -1361,19 +1299,20 @@ export default function EntryForm() {
                                     Please Wait...
                                   </span>
                                 ) : (
-                                  labels[32] || "Revoke"
+                                  labels[7] || "Submit"
                                 )}
                               </button>
-                            )}
-                        </>
-                      ) : (
-                        <>
-                          <img
-                            alt="loading"
-                            style={{ height: "50px", width: "50px" }}
-                            src="./images/loading.gif"
-                          />
-                          <p> {labels[17] || "Fetching location..."}</p>
+                            </>
+                          ) : (
+                            <>
+                              <img
+                                alt="loading"
+                                style={{ height: "50px", width: "50px" }}
+                                src="./images/loading.gif"
+                              />
+                              <p> {labels[17] || "Fetching location..."}</p>
+                            </>
+                          )}
                         </>
                       )}
                     </div>

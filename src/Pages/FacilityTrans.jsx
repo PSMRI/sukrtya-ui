@@ -242,51 +242,7 @@ export default function FacilityTrans() {
 
                         {!!item.transactionId ? (
 
-                          (item.approvalStatus === 2) ? (
-                            <div className="card h-80" style={{ backgroundColor: "#5DAE8B" }}  >
-                              <div className="card-header">
-                                {labels[7] || "Survey Name"}    :  <strong >  {item.fromName}</strong>
-                              </div>
-                              <div className="card-body" style={{ color: "black" }}>
-                                <p className="font-weight-500 ml-2">
-                                  {labels[8] || "User"} : {item.username}
-                                  <br />{labels[9] || "Transaction Id"}  : <strong> {item.transactionId}</strong>
-                                  <br />
-                                  {labels[10] || "Assessment Date"} : {item.userSubmissionDate}
-                                </p>
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-                                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
-                                    <a className="text-right" href={`https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`} rel="noreferrer" target="_blank">
-                                      <img title="click here to view on google map" src="./location.png" alt="location" style={{ height: "30px" }} /></a>click here to view on google map
-                                    <small title="entry location" className="text-white" style={{ wordBreak: "break-word" }}>{item.gaddress}</small>
-                                  </div>
-                                </div>
-                                <p className="font-weight-500 text-right text-white">
-                                  Approved by <strong title={labels[15] || "Approved By"} style={{ color: "wheat" }} > {item.approvedBy} </strong> on <strong title={labels[16] || "Approved Date"} style={{ color: "wheat" }} >{item.approvedDate}</strong>
-
-
-                                </p>
-
-                              </div>
-                              <div className="card-footer">
-                                <button
-                                  style={{ width: "100%" }}
-                                  disabled={loading}
-                                  onClick={() =>
-                                    handleSubmit(
-                                      item.formID,
-                                      item.transactionId,
-                                      item.user, item.approvalStatus,
-                                      item.lat, item.lon, item.gaddress
-                                    )
-                                  }
-                                  className="btn btn-primary"
-                                >
-                                  {loading ? "Please Wait..." : "View"}
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
+                         
                             <div className="card h-80" style={{ backgroundColor: "#E3F0AF" }}  >
                               <div className="card-header">
                                 {labels[7] || "Survey Name"}    :  <strong >  {item.fromName}</strong>
@@ -327,43 +283,14 @@ export default function FacilityTrans() {
                                   }
                                   className="btn btn-dark"
                                 >
-                                  {loading ? "Please Wait..." : labels[12] || "Update"}
+                                  {loading ? "Please Wait..." : "View"}
                                 </button>
                               </div>
                             </div>
-                          )
+                     
 
                         ) : (
-                          <div className="card h-100" style={{ backgroundColor: "#FF7676" }}  >
-                            <div className="card-header">
-                              {labels[7] || "Survey Name"}    :  <strong >  {item.fromName}</strong>
-                            </div>
-                            <div className="card-body" style={{ color: "black" }}>
-                              <div className="text-center mt-3 mb-3">
-                                <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
-
-                                  <img src="./pending.png" alt="pending" style={{ height: "100px" }} />
-                                  <span className="text-dark text-left"><strong>The survey assessment has not been completed by anyone at this time. Please take a moment to fill it out.</strong></span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="card-footer">
-                              <button
-                                style={{ width: "100%" }}
-                                disabled={loading}
-                                onClick={() =>
-                                  handleSubmit(
-                                    item.formID,
-                                    item.transactionId,
-                                    item.user, item.approvalStatus,
-                                    item.lat, item.lon, item.gaddress
-                                  )
-                                }
-                                className="btn btn-dark "
-                              >
-                                {loading ? "Please Wait..." : labels[13] || "Select"}
-                              </button></div>
-                          </div>
+                         <> </>
                         )}
                       </div>
 
