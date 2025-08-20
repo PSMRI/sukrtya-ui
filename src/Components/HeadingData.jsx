@@ -56,14 +56,7 @@ export default function HeadingData(props) {
   return (
     <>
       <div style={containerStyle}>
-        <img
-          src={
-           "/placeholder-image.png"}
-          alt="Facility"
-          style={logoStyle}
-          onLoad={() => setImageLoaded(true)} // When the image successfully loads
-          onError={() => setImageLoaded(false)} // Fallback to placeholder if image fails to load
-        />
+        
         <div style={headingStyle}>
           <div style={detailStyle}>
             {labels[6] || "State"}: BIHAR

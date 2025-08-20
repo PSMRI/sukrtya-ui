@@ -207,10 +207,10 @@ export default function NavBar() {
                   {labels[1] || "Change Password"}
                 </Link>
 
-                <Link to="/profile" className="dropdown-item">
+                {/* <Link to="/profile" className="dropdown-item">
                   <i className="ti-settings text-primary"></i>
                   {labels[2] || "Profile"}
-                </Link>
+                </Link> */}
 
                 <button className="dropdown-item" onClick={handleLogout}>
                   <i className="ti-power-off text-danger"></i>

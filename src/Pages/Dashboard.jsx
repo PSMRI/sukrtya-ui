@@ -252,7 +252,7 @@ export default function Dashboard() {
 
   // Memoized user info
   const userInfo = useMemo(() => ({
-    profileName: localStorage.getItem("profileName")?.split(" ")[0],
+    profileName: localStorage.getItem("profileName"),
     username: localStorage.getItem("username")
   }), []);
 
@@ -273,11 +273,11 @@ export default function Dashboard() {
             <div className="row" style={headerStyles}>
               <div className="col-md-4">
                 <h3 className="font-weight-bold text-capitalize">
-                  {labels[4] || "Welcome"},
+                
                   <span className="text-success">{userInfo.profileName}</span>
                 </h3>
                 <h6 className="font-weight-normal mb-0">
-                  <span className="text-primary">{userInfo.username}</span>
+                <span className="text-muted">Username : &nbsp;</span><span className="text-primary">{userInfo.username}</span>
                 </h6>
               </div>
               <div className="col-md-4 mt-2" />

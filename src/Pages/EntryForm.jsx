@@ -917,7 +917,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                {questionId} - {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -956,7 +956,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-              {questionId} - {questionName}
+               {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1012,7 +1012,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-              {questionId} -  {questionName}
+               {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1073,7 +1073,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-              {questionId} -  {questionName}
+               {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1113,7 +1113,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-              {questionId} -  {questionName}
+               {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1169,7 +1169,7 @@ export default function EntryForm() {
               <div className="col-md-6 col-sm-12 col-xs-12 col-lg-6 col-xl-6">
                 <div className="mobile-display">
                   <div className="font-weight-bold text-capitalize">
-                    Welcome ,
+          
                     <span className="text-success">
                       {localStorage.getItem("profileName")}
                     </span>{" "}
@@ -1184,14 +1184,14 @@ export default function EntryForm() {
               <div className="col-md-2"></div>
               <div className="mobile-hidden col-md-4 col-sm-12 col-xs-12 col-lg-4 col-xl-4 text-right ">
                 <h3 className="font-weight-bold text-capitalize">
-                  Welcome,
+                 
                   <span className="text-success">
-                    {localStorage.getItem("profileName").split(" ")[0]}
+                    {localStorage.getItem("profileName")}
                   </span>
                 </h3>
 
                 <h6 className="font-weight-normal mb-0 ">
-                  <span className="text-primary" title="Username">
+                <span className="text-muted">Username : &nbsp;</span><span className="text-primary" title="Username">
                     {localStorage.getItem("username")}
                   </span>
                 </h6>
@@ -1308,18 +1308,15 @@ export default function EntryForm() {
                               <p>
                                 {" "}
                                 <strong>
-                                  {labels[33] ||
-                                    "Your Current Location Details"}{" "}
-                                  :
+                                Your Current Location
                                 </strong>{" "}
+                                <br/> Latitude: {latitude}, Longitude: {longitude}
                               </p>
-                              <p>
-                                Latitude: {latitude}, Longitude: {longitude}
-                              </p>
+                              
                               <button
                                 style={{ width: "200px" }}
                                 disabled={loading}
-                                className="btn btn-primary mr-2"
+                                className="btn btn-primary mr-2 mt-4"
                                 type="button"
                                 onClick={handleSubmit}
                               >

@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import LanguageData from "../Data/LanguageList.json";
 import axios from "axios";
 
 // Safe localStorage helpers
@@ -22,12 +21,10 @@ function safeLocalStorageSet(key, value) {
 }
 
 export default function Login() {
-  const allowedLanguages = ["1", "2"];
   const [loading, setLoading] = useState(false); // Loading state
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    language: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -78,11 +75,12 @@ export default function Login() {
         safeLocalStorageSet("userID", userID);
         safeLocalStorageSet("profileName", profileName);
         safeLocalStorageSet("username", userName);
-        safeLocalStorageSet("language", formData.language);
+        // Default language to "1" since selection is removed
+        safeLocalStorageSet("language", "1");
         safeLocalStorageSet("isApprover", response.data.user.approvalStatus);
         //alert("Welcome - " + profileName);
         navigate("/dashboard", {
-          state: { userId: userID, regLid: formData.language, mappingUserId: userID },
+          state: { userId: userID, regLid: "1", mappingUserId: userID },
         });
         setSubmitted(true);
       }
@@ -122,9 +120,6 @@ export default function Login() {
       newErrors.password = "Password is required";
     } else if (data.password.length < 3) {
       newErrors.password = "Password must be at least 3 characters";
-    }
-    if (!data.language) {
-      newErrors.language = "Language is required";
     }
     return newErrors;
   };
@@ -203,31 +198,7 @@ export default function Login() {
                           </div>
                         )}
                       </div></div>
-                    <div className="form-group">
-                      <select
-                        name="language"
-                        className={`text-primary form-control form-control-sm ${errors.language ? "is-invalid" : ""
-                          }`}
-                        value={formData.language}
-                        onChange={handleChange}
-                      >
-                        <option value="">Please select language..</option>
-                        {LanguageData.filter((option) =>
-                          allowedLanguages.includes(option.code)
-                        )
-                          .sort((a, b) => a.code.localeCompare(b.code))
-                          .map((getLanguage, index) => (
-                            <option value={getLanguage.code} key={index}>
-                              {getLanguage.nativeName}
-                            </option>
-                          ))}
-                      </select>
-                      {errors.language && (
-                        <div className="invalid-feedback">
-                          {errors.language}
-                        </div>
-                      )}
-                    </div>
+                    {/* Removed language selection dropdown */}
                     <div className="mt-3">
                       <button disabled={loading}
                         type="submit"
@@ -242,23 +213,13 @@ export default function Login() {
                             />
                             Please Wait...
                           </span>
-                        ) : ("Login Now")}
+                        ) : ("Login")}
                       </button>
                       {errors.global && (
                         <p style={{ color: "red" }}>{errors.global}</p>
                       )}{" "}
                     </div>
-                    <div className="my-2 d-flex justify-content-between align-items-center">
-                      <div className="form-check">
-                        <label className="form-check-label text-muted">
-                          <input type="checkbox" className="form-check-input" />
-                          Keep me signed in
-                        </label>
-                      </div>
-                      <a href="#" className="auth-link text-black">
-                        Forgot password?
-                      </a>
-                    </div>
+                    
                   </form>
                 </div>
               </div>

@@ -145,7 +145,7 @@ export default function FacilityTrans() {
               <div className="col-md-6 col-sm-12 col-xs-12 col-lg-6 col-xl-6">
                 <div className="mobile-display">
                   <div className="font-weight-bold text-capitalize">
-                    {labels[14] || "Welcome"},
+                   User : 
                     <span className="text-success">
                       {localStorage.getItem("profileName")}
                     </span> <br /> <small className="text-muted">
@@ -158,14 +158,15 @@ export default function FacilityTrans() {
               <div className="col-md-4 col-sm-12 col-xs-12 col-lg-4 col-xl-4 text-right ">
                 <div className="mobile-hidden">
                   <h3 className="font-weight-bold text-capitalize">
-                    {labels[14] || "Welcome"},
+                    
                     <span className="text-success">
-                      {localStorage.getItem("profileName").split(" ")[0]}
+                      {localStorage.getItem("profileName")}
                     </span>
                   </h3>
                   <h6 className="font-weight-normal mb-0 ">
+                    <span className="text-muted">Username : &nbsp;</span>
                     <span className="text-primary">
-                      {localStorage.getItem("username")}
+                       {localStorage.getItem("username")}
                     </span>
                   </h6>
                 </div>
