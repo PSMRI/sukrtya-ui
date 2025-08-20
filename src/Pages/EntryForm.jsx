@@ -306,6 +306,26 @@ export default function EntryForm() {
         }
       }
     });
+
+    // Override: If a Multi Choice includes 'Other' (value 15), ensure the immediate next 'Other' text question is visible
+    questions.forEach((q) => {
+      if (q.questionType === "Multi Choice" && q.skipQuestionId) {
+        const selected = answers[q.questionId];
+        if (typeof selected === "string" && selected !== "") {
+          const selectedValues = selected.split(",").map((v) => Number(v));
+          const hasOther = selectedValues.includes(15);
+          if (hasOther) {
+            const nextQuestion = questions.find(
+              (nq) => nq.questionId === q.questionId + 1
+            );
+            if (nextQuestion) {
+              initialHiddenQuestions.delete(nextQuestion.questionId);
+            }
+          }
+        }
+      }
+    });
+
     setHiddenQuestions(initialHiddenQuestions);
   }, [answers, questions]);
 
@@ -443,11 +463,31 @@ export default function EntryForm() {
                 skipAnswers.includes(Number(v))
               );
             }
+
+            // Detect if 'Other' (value 15) is also selected for the current Multi Choice
+            const isOtherSelected =
+              (typeof processedValue === "string" &&
+                processedValue.split(",").includes("15")) ||
+              (Array.isArray(processedValue) &&
+                processedValue.map(String).includes("15"));
+            const otherQuestionId = questions[startIndex + 1]
+              ? questions[startIndex + 1].questionId
+              : null;
+
             for (let i = startIndex + 1; i < endIndex; i++) {
               const dependentQuestion = questions[i];
               if (shouldSkip) {
-                initialHiddenQuestions.add(dependentQuestion.questionId);
-                delete updatedAnswers[dependentQuestion.questionId];
+                // Keep the immediate 'Other' question visible if 15 is selected
+                if (
+                  isOtherSelected &&
+                  otherQuestionId &&
+                  dependentQuestion.questionId === otherQuestionId
+                ) {
+                  initialHiddenQuestions.delete(dependentQuestion.questionId);
+                } else {
+                  initialHiddenQuestions.add(dependentQuestion.questionId);
+                  delete updatedAnswers[dependentQuestion.questionId];
+                }
               } else {
                 initialHiddenQuestions.delete(dependentQuestion.questionId);
               }
@@ -877,7 +917,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                  {questionName}
+                {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -916,7 +956,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                 {questionName}
+              {questionId} - {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -972,7 +1012,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                {questionName}
+              {questionId} -  {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1033,7 +1073,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                 {questionName}
+              {questionId} -  {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1073,7 +1113,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-                {questionName}
+              {questionId} -  {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
