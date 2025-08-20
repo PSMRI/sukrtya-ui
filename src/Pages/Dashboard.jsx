@@ -124,6 +124,29 @@ export default function Dashboard() {
     fetchData();
   }, [facilitiesEndpoint, navigate]);
 
+  // Auto-select when only one district exists
+  useEffect(() => {
+    if (!districtLoading && districts.length === 1 && !selectedDistrict) {
+      const only = districts[0];
+      setSelectedDistrict(only.code);
+      setSelectedBlock(null);
+      setSelectedCluster(null);
+      setBlocks([]);
+      setClusters([]);
+      setFacilities([]);
+      setSelectedNames(prev => ({
+        ...prev,
+        district: only.name,
+        block: "",
+        cluster: ""
+      }));
+      localStorage.setItem("selectedDistrictName", only.name);
+      localStorage.removeItem("selectedBlockName");
+      localStorage.removeItem("selectedBlockCode");
+      localStorage.removeItem("selectedClusterName");
+    }
+  }, [districtLoading, districts, selectedDistrict]);
+
   // Effect for updating blocks when district is selected
   useEffect(() => {
     if (selectedDistrict && data.length > 0) {
@@ -166,6 +189,26 @@ export default function Dashboard() {
     }
   }, [selectedDistrict, data]);
 
+  // Auto-select when only one block exists
+  useEffect(() => {
+    if (!blockLoading && blocks.length === 1 && !selectedBlock) {
+      const only = blocks[0];
+      const blockName = only?.blockName || "";
+      setSelectedBlock(only.blockCode);
+      setClusters([]);
+      setSelectedCluster(null);
+      setFacilities([]);
+      setSelectedNames(prev => ({
+        ...prev,
+        block: blockName,
+        cluster: ""
+      }));
+      localStorage.setItem("selectedBlockName", blockName);
+      localStorage.setItem("selectedBlockCode", only.blockCode);
+      localStorage.removeItem("selectedClusterName");
+    }
+  }, [blockLoading, blocks, selectedBlock]);
+
   // Effect for updating clusters when block is selected
   useEffect(() => {
     if (selectedBlock && selectedDistrict && data.length > 0) {
@@ -207,6 +250,19 @@ export default function Dashboard() {
       setFacilityLoading(false);
     }
   }, [selectedCluster, selectedBlock, selectedDistrict, data]);
+
+  // Auto-select when only one facility (cluster) exists
+  useEffect(() => {
+    if (!facilityLoading && clusters.length === 1 && !selectedCluster) {
+      const only = clusters[0];
+      setSelectedCluster(only.clusterId);
+      setSelectedNames(prev => ({
+        ...prev,
+        cluster: only.clusterName
+      }));
+      localStorage.setItem("selectedClusterName", only.clusterName);
+    }
+  }, [facilityLoading, clusters, selectedCluster]);
 
   // Memoized handler functions
   const handleSubmit = useCallback((item) => {
@@ -388,7 +444,9 @@ export default function Dashboard() {
                     }}
                     disabled={districtLoading}
                   >
-                    <option value="">{districtLoading ? "Loading districts..." : "Select District"}</option>
+                    {(districtLoading || districts.length !== 1) && (
+                      <option value="">{districtLoading ? "Loading districts..." : "Select District"}</option>
+                    )}
                     {!districtLoading && districts.map(district => (
                       <option key={district.code} value={district.code}>
                         {district.name}
@@ -454,7 +512,9 @@ export default function Dashboard() {
                       }}
                       disabled={!selectedDistrict || blockLoading}
                     >
-                      <option value="">{blockLoading ? "Loading blocks..." : "Select Block"}</option>
+                      {(blockLoading || blocks.length !== 1) && (
+                        <option value="">{blockLoading ? "Loading blocks..." : "Select Block"}</option>
+                      )}
                       {!blockLoading && blocks.map(block => (
                         <option key={block.blockCode} value={block.blockCode}>
                           {block.blockName}
@@ -498,7 +558,9 @@ export default function Dashboard() {
                     }}
                     disabled={!selectedBlock || facilityLoading}
                   >
-                    <option value="">{facilityLoading ? "Loading facilities..." : "Select Facility"}</option>
+                    {(facilityLoading || clusters.length !== 1) && (
+                      <option value="">{facilityLoading ? "Loading facilities..." : "Select Facility"}</option>
+                    )}
                     {!facilityLoading && clusters.map(cluster => (
                       <option key={cluster.clusterId} value={cluster.clusterId}>
                         {cluster.clusterName}
