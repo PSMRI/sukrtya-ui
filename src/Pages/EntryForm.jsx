@@ -27,6 +27,7 @@ export default function EntryForm() {
   const [hiddenQuestions, setHiddenQuestions] = useState(new Set());
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [imageSize, setImageSize] = useState(null);
+  const [navOffset, setNavOffset] = useState(64);
 
   const [labels, setLabels] = useState({});
 
@@ -175,6 +176,20 @@ export default function EntryForm() {
 
     fetchLabel();
   }, []); // Fetch labels only once on mount
+
+  useEffect(() => {
+    const measureNavbar = () => {
+      try {
+        const nav = document.querySelector("nav.navbar");
+        if (nav && nav.offsetHeight) {
+          setNavOffset(nav.offsetHeight);
+        }
+      } catch (_) {}
+    };
+    measureNavbar();
+    window.addEventListener("resize", measureNavbar);
+    return () => window.removeEventListener("resize", measureNavbar);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -729,7 +744,7 @@ export default function EntryForm() {
 
         if (saveResponse.data.status === "success") {
           if (transActionId !== null && transActionId !== "") {
-            alert("Form updated successfully");
+            alert("Form submitted successfully");
           } else {
             alert("Form submitted successfully");
           }
@@ -1150,11 +1165,79 @@ export default function EntryForm() {
     // width: 1280,
     // height: 720,
   };
+  // Progress computation based on visible questions
+  const visibleQuestions = questions.filter(
+    (q) => !hiddenQuestions.has(q.questionId)
+  );
+  const answeredCount = visibleQuestions.reduce((count, q) => {
+    const value = answers[q.questionId];
+    let isAnswered = false;
+    if (q.questionType === "Multi Choice") {
+      isAnswered = typeof value === "string" && value !== "";
+    } else {
+      isAnswered =
+        value !== undefined &&
+        value !== null &&
+        String(value).trim() !== "";
+    }
+    return count + (isAnswered ? 1 : 0);
+  }, 0);
+  const totalCount = visibleQuestions.length;
+  const completionPercent =
+    totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
+  const progressColor = "#28a745";
   return (
     <Base title="Entry Form">
       <div className="container-fluid page-body-wrapper">
         <div className="main-panel">
           <div className="content-wrapper">
+            {/* Sticky top progress bar */}
+            <div
+              style={{
+                position: "fixed",
+                top: navOffset,
+                left: 0,
+                right: 0,
+                background: "#fff",
+                zIndex: 2000,
+                padding: "12px 16px 10px",
+                borderBottom: "1px solid #eee",
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  backgroundColor: "#e9ecef",
+                  borderRadius: "9999px",
+                  height: "10px",
+                  overflow: "hidden",
+                  boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)",
+                }}
+                aria-label="Form completion progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={completionPercent}
+                title={`${completionPercent}% complete`}
+              >
+                <div
+                  style={{
+                    width: `${completionPercent}%`,
+                    height: "100%",
+                    backgroundColor: progressColor,
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </div>
+              <div className="d-flex justify-content-between mt-1">
+                <small className="text-muted"><strong>{completionPercent}%</strong> complete</small>
+                <small className="text-muted">
+                  {answeredCount}/{totalCount}
+                </small>
+              </div>
+            </div>
+            {/* spacer to offset fixed bar height */}
+            <div style={{ height: 34 }} />
             <div
               className="row"
               style={{
@@ -1313,32 +1396,7 @@ export default function EntryForm() {
                                 <br/> Latitude: {latitude}, Longitude: {longitude}
                               </p>
                               
-                              <button
-                                style={{ width: "200px" }}
-                                disabled={loading}
-                                className="btn btn-primary mr-2 mt-4"
-                                type="button"
-                                onClick={handleSubmit}
-                              >
-                                {loading ? (
-                                  <span
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "8px",
-                                    }}
-                                  >
-                                    <img
-                                      src="./loader.gif"
-                                      alt="PLease wait..."
-                                      style={{ width: "20px", height: "20px" }}
-                                    />
-                                    Please Wait...
-                                  </span>
-                                ) : (
-                                  labels[7] || "Submit"
-                                )}
-                              </button>
+                              {/* Submit button moved to sticky footer */}
                             </>
                           ) : (
                             <>
@@ -1502,13 +1560,67 @@ export default function EntryForm() {
           </div>
         </div>
       </div>
-
+ 
+      {/* Sticky footer submit bar */}
       <div
-        className="floating-back-button"
-        onClick={() => window.history.back()}
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: "#fff",
+          borderTop: "1px solid #eee",
+          zIndex: 2000,
+          padding: "10px 16px",
+        }}
       >
-        ← Back
+        <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex align-items-center">
+            <button
+              type="button"
+              className="btn btn-dark mr-3"
+              onClick={() => window.history.back()}
+              aria-label="Go back"
+              title="Go back"
+            >
+              ← Back
+            </button>
+           
+          </div>
+          <div>
+            {transActionId == null && (
+              <button
+                style={{ minWidth: 160 }}
+                disabled={loading || !latitude || !longitude}
+                className="btn btn-primary"
+                type="button"
+                onClick={handleSubmit}
+              >
+                {loading ? (
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <img
+                      src="./loader.gif"
+                      alt="PLease wait..."
+                      style={{ width: "20px", height: "20px" }}
+                    />
+                    Please Wait...
+                  </span>
+                ) : (
+                  labels[7] || "Submit"
+                )}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
+
+      
     </Base>
   );
 }

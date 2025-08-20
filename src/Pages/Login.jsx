@@ -151,6 +151,7 @@ export default function Login() {
                   <h6 className="font-weight-light">Sign in to continue.</h6>
                   <form className="pt-3" onSubmit={handleSubmit} noValidate>
                     <div className="form-group">
+                      <label htmlFor="username">Username</label>
                       <input
                         type="text"
                         className={`text-primary form-control form-control-sm ${errors.username ? "is-invalid" : ""
@@ -169,6 +170,7 @@ export default function Login() {
                     </div>
                     <div className="form-group">
                       <div style={{ position: "relative" }}>
+                      <label htmlFor="password">Password</label>
                         <input
                           type={passwordVisible ? "text" : "password"}
                           className={`text-primary form-control form-control-sm ${errors.password ? "is-invalid" : ""
