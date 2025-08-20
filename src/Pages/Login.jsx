@@ -242,7 +242,7 @@ export default function Login() {
                             />
                             Please Wait...
                           </span>
-                        ) : ("Login")}
+                        ) : ("Login Now")}
                       </button>
                       {errors.global && (
                         <p style={{ color: "red" }}>{errors.global}</p>
