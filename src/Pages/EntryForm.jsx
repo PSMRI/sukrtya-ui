@@ -322,20 +322,45 @@ export default function EntryForm() {
       }
     });
 
-    // Override: If a Multi Choice includes 'Other' (value 15), ensure the immediate next 'Other' text question is visible
-    questions.forEach((q) => {
-      if (q.questionType === "Multi Choice" && q.skipQuestionId) {
-        const selected = answers[q.questionId];
-        if (typeof selected === "string" && selected !== "") {
-          const selectedValues = selected.split(",").map((v) => Number(v));
-          const hasOther = selectedValues.includes(15);
-          if (hasOther) {
-            const nextQuestion = questions.find(
-              (nq) => nq.questionId === q.questionId + 1
-            );
-            if (nextQuestion) {
-              initialHiddenQuestions.delete(nextQuestion.questionId);
+    // General skip logic based on skipanswer and skipQuestionId
+    questions.forEach((question) => {
+      const { questionId, skipQuestionId, skipanswer, questionType } = question;
+      const answerValue = answers[questionId];
+
+      // Check if question has skip logic defined
+      if (skipQuestionId && skipanswer && answerValue !== "") {
+        // Parse skip answers into array of numbers
+        const skipAnswers = skipanswer.split("/").map(Number);
+        
+        let shouldSkip = false;
+        const currentAnswer = Number(answerValue);
+
+        // For Single Choice questions
+        if (questionType === "Single Choice") {
+          shouldSkip = skipAnswers.includes(currentAnswer);
+        }
+        // For Multi Choice questions
+        else if (questionType === "Multi Choice" && typeof answerValue === "string") {
+          const selectedValues = answerValue.split(",").map(Number);
+          shouldSkip = selectedValues.some(val => skipAnswers.includes(val));
+        }
+
+        // If answer matches skip condition, handle question visibility
+        if (shouldSkip) {
+          // Hide questions between current and skip target if answer is in skip answers
+          const startIndex = questions.findIndex(q => q.questionId === questionId);
+          const endIndex = questions.findIndex(q => q.questionId === skipQuestionId);
+          
+          for (let i = startIndex + 1; i < endIndex; i++) {
+            if (i < questions.length) {
+              initialHiddenQuestions.add(questions[i].questionId);
             }
+          }
+        } else {
+          // Show the next question if current answer is not in skip answers
+          const nextQuestion = questions.find(q => q.questionId === questionId + 1);
+          if (nextQuestion) {
+            initialHiddenQuestions.delete(nextQuestion.questionId);
           }
         }
       }
