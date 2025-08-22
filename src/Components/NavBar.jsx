@@ -62,19 +62,18 @@ export default function NavBar() {
         }
       );
 
-      if (profileResponse.data.status === "success") {
+      if (profileResponse.data.status === "success" && 
+          profileResponse.data.message && 
+          profileResponse.data.message.trim() !== "") {
         setData(profileResponse.data);
-        if (!profileResponse.data.message || profileResponse.data.message.trim() === "") {
-          handleSessionExpired();
-        }
       } else {
+        // Redirect to login if data.message is empty/null or status is not success
         handleSessionExpired();
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        handleSessionExpired();
-      }
+      // Redirect to login for any error in fetching profile
+      handleSessionExpired();
     }
   };
 
@@ -88,21 +87,9 @@ export default function NavBar() {
       fetchProfile();
     }, SESSION_CHECK_INTERVAL);
 
-    // Set up axios interceptor for global error handling
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
-          handleSessionExpired();
-        }
-        return Promise.reject(error);
-      }
-    );
-
     // Cleanup
     return () => {
       clearInterval(sessionCheckInterval);
-      axios.interceptors.response.eject(interceptor);
     };
   }, [handleSessionExpired]);
 

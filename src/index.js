@@ -14,11 +14,28 @@ import Profile from "./Pages/Profile";
 
 // Set axios default baseURL from environment variable
 axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || 'https://sukrityaapi.sangha4u.in';
-
+//console.log("Axios baseURL set to:", axios.defaults.baseURL);
 // Optional: Set other defaults, like headers
 //axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';
 //axios.defaults.headers.post['Content-Type'] = 'application/json';
 //axios.defaults.withCredentials = true;
+
+// Global axios response interceptor: redirect to login on 401/403
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    if (status === 401 || status === 403) {
+      try {
+        localStorage.clear();
+      } catch (_) {}
+      // Use hard redirect to ensure full app reset
+      window.location.replace("/login");
+      return; // Prevent further promise chain handling
+    }
+    return Promise.reject(error);
+  }
+);
 
 const router = createBrowserRouter([
   {

@@ -228,53 +228,56 @@ export default function EntryForm() {
 
     const initialHiddenQuestions = new Set();
 
-    // Custom skip logic for questionId 2 (Other)
+ 
     const answer2 = answers[2];
-    if (answer2 === "6") {
-      // Show question 3, hide question 4
+    if (answer2 === "5" || answer2 === "6") {
+      // For option 5 (Development partner) and 6 (Other): show Q3, hide Q4
       initialHiddenQuestions.delete(3);
-      initialHiddenQuestions.add(4);
-    } else if (answer2 && answer2 !== "6") {
-      // Hide question 3, show question 4
+      
+    } else if (answer2 && answer2 !== "") {
+      // For options 1-4: hide Q3, show Q4
       initialHiddenQuestions.add(3);
       initialHiddenQuestions.delete(4);
     }
-
-    // Custom skip logic for questionId 16 and 18
-    const answer16 = answers[16];
-    const answer18 = answers[18];
-    // If questionId 16 is answered with 10 (नहीं)
-    if (answer16 === "10") {
-      // Show question 18, hide 17
-      initialHiddenQuestions.delete(18);
-      initialHiddenQuestions.add(17);
-      // If question 18 is answered, jump to 122 (hide 19-121)
-      if (answer18) {
+ 
+    const answer11 = answers[11];
+    const answer13 = answers[13];
+    //console.log("Answer 11:", answer11);
+    //console.log("Answer 13:", answer13);
+ 
+    if (answer11 === "10") {
+  
+      initialHiddenQuestions.delete(13);
+      initialHiddenQuestions.add(12);
+    
+      if (answer13 && answer13 !== "") {
         for (let q of questions) {
-          if (q.questionId > 18 && q.questionId < 122) {
+          if (q.questionId > 13 && q.questionId < 118) {
             initialHiddenQuestions.add(q.questionId);
           }
         }
       }
-    } else if (answer16 === "9") {
-      // If 16 is 'हाँ', hide 18, show 17
-      initialHiddenQuestions.add(18);
-      initialHiddenQuestions.delete(17);
+    } else if (answer11 === "9") {
+ 
+      initialHiddenQuestions.add(13);
+      initialHiddenQuestions.delete(12);
+
+      
     }
 
     // Custom skip logic for questionId 105 and 106
-    const answer105 = answers[105];
-    if (answer105 === "10") {
-      initialHiddenQuestions.delete(106);
-      initialHiddenQuestions.add(107);
-      initialHiddenQuestions.add(108);
-      initialHiddenQuestions.add(109);
+    const answer101 = answers[101];
+    if (answer101 === "10") {
+      initialHiddenQuestions.delete(102);
+      initialHiddenQuestions.add(103);
+      initialHiddenQuestions.add(104);
+      initialHiddenQuestions.add(105);
     }
 
     // Default skip logic for other questions
     questions.forEach((question) => {
       const { questionId, skipanswer, skipQuestionId, questionType } = question;
-      if (questionId === 16 || questionId === 18) return; // Already handled above
+      if (questionId === 11 || questionId === 13) return; // Already handled above
       if (skipanswer) {
         const skipAnswers = skipanswer.split("/").map(Number);
         let answerValue = answers[questionId];
@@ -322,49 +325,7 @@ export default function EntryForm() {
       }
     });
 
-    // General skip logic based on skipanswer and skipQuestionId
-    questions.forEach((question) => {
-      const { questionId, skipQuestionId, skipanswer, questionType } = question;
-      const answerValue = answers[questionId];
-
-      // Check if question has skip logic defined
-      if (skipQuestionId && skipanswer && answerValue !== "") {
-        // Parse skip answers into array of numbers
-        const skipAnswers = skipanswer.split("/").map(Number);
-        
-        let shouldSkip = false;
-        const currentAnswer = Number(answerValue);
-
-        // For Single Choice questions
-        if (questionType === "Single Choice") {
-          shouldSkip = skipAnswers.includes(currentAnswer);
-        }
-        // For Multi Choice questions
-        else if (questionType === "Multi Choice" && typeof answerValue === "string") {
-          const selectedValues = answerValue.split(",").map(Number);
-          shouldSkip = selectedValues.some(val => skipAnswers.includes(val));
-        }
-
-        // If answer matches skip condition, handle question visibility
-        if (shouldSkip) {
-          // Hide questions between current and skip target if answer is in skip answers
-          const startIndex = questions.findIndex(q => q.questionId === questionId);
-          const endIndex = questions.findIndex(q => q.questionId === skipQuestionId);
-          
-          for (let i = startIndex + 1; i < endIndex; i++) {
-            if (i < questions.length) {
-              initialHiddenQuestions.add(questions[i].questionId);
-            }
-          }
-        } else {
-          // Show the next question if current answer is not in skip answers
-          const nextQuestion = questions.find(q => q.questionId === questionId + 1);
-          if (nextQuestion) {
-            initialHiddenQuestions.delete(nextQuestion.questionId);
-          }
-        }
-      }
-    });
+    // Note: A single pass (above) handles generic skip logic; avoid duplicating it here
 
     setHiddenQuestions(initialHiddenQuestions);
   }, [answers, questions]);
@@ -414,13 +375,22 @@ export default function EntryForm() {
       });
   };
 
-  // Initialize answers based on fetched questions
+  // Initialize answers based on fetched questions (merge, don't overwrite existing)
   useEffect(() => {
-    const initialAnswers = questions.reduce((acc, question) => {
-      acc[question.questionId] = question.answer || "";
-      return acc;
-    }, {});
-    setAnswers(initialAnswers);
+    if (!questions || questions.length === 0) return;
+    setAnswers((prev) => {
+      const merged = { ...prev };
+      questions.forEach((q) => {
+        if (
+          merged[q.questionId] === undefined ||
+          merged[q.questionId] === null ||
+          String(merged[q.questionId]).trim() === ""
+        ) {
+          merged[q.questionId] = q.answer || "";
+        }
+      });
+      return merged;
+    });
   }, [questions]);
 
   const handleInputChange = (questionId, value) => {
@@ -462,83 +432,7 @@ export default function EntryForm() {
       }));
     }
 
-    // Update the answers state for skip logic
-    const updatedAnswers = { ...answers, [questionId]: processedValue };
-    const initialHiddenQuestions = new Set(hiddenQuestions);
-
-    questions.forEach((question) => {
-      if (question.skipQuestionId && question.skipanswer) {
-        const skipAnswers = question.skipanswer.split("/").map(Number);
-
-        if (question.questionId === questionId) {
-          const startIndex = questions.findIndex(
-            (q) => q.questionId === questionId
-          );
-          const endIndex = questions.findIndex(
-            (q) => q.questionId === question.skipQuestionId
-          );
-
-          // If value is empty (string or array), hide and clear dependent questions
-          const isEmpty =
-            (typeof processedValue === "string" && !processedValue) ||
-            (Array.isArray(processedValue) && processedValue.length === 0);
-          if (isEmpty) {
-            for (let i = startIndex + 1; i < endIndex; i++) {
-              const dependentQuestion = questions[i];
-              initialHiddenQuestions.add(dependentQuestion.questionId);
-              delete updatedAnswers[dependentQuestion.questionId];
-            }
-          } else {
-            // Otherwise, handle conditional hiding based on skip logic
-            let shouldSkip = false;
-            if (typeof processedValue === "string") {
-              // For multi choice, processedValue is a comma separated string
-              // Check if any value matches skipAnswers
-              const selectedValues = processedValue
-                .split(",")
-                .map((v) => Number(v));
-              shouldSkip = selectedValues.some((v) => skipAnswers.includes(v));
-            } else if (Array.isArray(processedValue)) {
-              shouldSkip = processedValue.some((v) =>
-                skipAnswers.includes(Number(v))
-              );
-            }
-
-            // Detect if 'Other' (value 15) is also selected for the current Multi Choice
-            const isOtherSelected =
-              (typeof processedValue === "string" &&
-                processedValue.split(",").includes("15")) ||
-              (Array.isArray(processedValue) &&
-                processedValue.map(String).includes("15"));
-            const otherQuestionId = questions[startIndex + 1]
-              ? questions[startIndex + 1].questionId
-              : null;
-
-            for (let i = startIndex + 1; i < endIndex; i++) {
-              const dependentQuestion = questions[i];
-              if (shouldSkip) {
-                // Keep the immediate 'Other' question visible if 15 is selected
-                if (
-                  isOtherSelected &&
-                  otherQuestionId &&
-                  dependentQuestion.questionId === otherQuestionId
-                ) {
-                  initialHiddenQuestions.delete(dependentQuestion.questionId);
-                } else {
-                  initialHiddenQuestions.add(dependentQuestion.questionId);
-                  delete updatedAnswers[dependentQuestion.questionId];
-                }
-              } else {
-                initialHiddenQuestions.delete(dependentQuestion.questionId);
-              }
-            }
-          }
-        }
-      }
-    });
-
-    setAnswers(updatedAnswers);
-    setHiddenQuestions(initialHiddenQuestions);
+    // Skip-logic visibility is computed centrally in useEffect based on latest answers
   };
 
   const base64ToBlob = (base64, mimeType = "image/jpeg") => {
@@ -659,6 +553,9 @@ export default function EntryForm() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Read-only mode when data already submitted (message visible)
+  const isReadOnly = transActionId != null;
+
   const fetchData = async (url, method, data, token) => {
     try {
       const response = await axios({
@@ -675,14 +572,23 @@ export default function EntryForm() {
 
   const constructPostAnswers = (answers, questions) =>
     Object.entries(answers)
-      .map(([questionId, value]) => ({
-        questionId: parseInt(questionId),
-        questionType: questions.find(
-          (q) => q.questionId === parseInt(questionId)
-        )?.questionType,
-        answer: value,
-      }))
-      .filter((item) => item.answer);
+      .map(([questionId, value]) => {
+        const qId = parseInt(questionId);
+        const question = questions.find((q) => q.questionId === qId);
+        return {
+          questionId: qId,
+          questionType: question?.questionType,
+          answer: value,
+        };
+      })
+      // Exclude answers for hidden questions and empty values
+      .filter(
+        (item) =>
+          !hiddenQuestions.has(item.questionId) &&
+          item.answer !== undefined &&
+          item.answer !== null &&
+          String(item.answer).trim() !== ""
+      );
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -753,7 +659,7 @@ export default function EntryForm() {
           postData,
           token
         );
-        //console.log(postData);
+        //console.log("postData:",postData);
 
         await fetchData(
           "/sukrtya/api/form-approval/auditTrail",
@@ -970,6 +876,7 @@ export default function EntryForm() {
                 }`}
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
+                disabled={isReadOnly}
               >
                 {localStorage.getItem("language") === "1" ? (
                   <option value="">Select an option</option>
@@ -1029,7 +936,21 @@ export default function EntryForm() {
                             );
                           }
                           handleInputChange(questionId, newValue);
+                          // Real-time required validation display for Multi Choice
+                          const isMandatory = isMandate === "1";
+                          const isVisible = !hiddenQuestions.has(questionId);
+                          const isEmpty = newValue.length === 0;
+                          setErrors((prev) => ({
+                            ...prev,
+                            [questionId]:
+                              isMandatory && isVisible && isEmpty
+                                ? (localStorage.getItem("language") === "1"
+                                    ? "This field is required."
+                                    : "यह फ़ील्ड आवश्यक है।")
+                                : null,
+                          }));
                         }}
+                        disabled={isReadOnly}
                       />
                       <label
                         className=""
@@ -1041,7 +962,9 @@ export default function EntryForm() {
                   );
                 })}
               {errors[questionId] && (
-                <p className="invalid-feedback">{errors[questionId]}</p>
+                <p className="invalid-feedback" style={{ display: "block" }}>
+                  {errors[questionId]}
+                </p>
               )}
             </div>
           </div>
@@ -1052,7 +975,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-               {questionName}
+             {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1085,6 +1008,7 @@ export default function EntryForm() {
                       type="button"
                       onClick={() => handleRotate(questionId)}
                       className="btn btn-outline-primary btn-icon-text me-2 mr-2 ml-2"
+                      disabled={isReadOnly}
                     >
                       <i className="ti-loop btn-icon-prepend"></i>{" "}
                       {labels[6] || "Rotate Image"}
@@ -1094,6 +1018,7 @@ export default function EntryForm() {
                     onClick={() => openCameraModal(question)}
                     type="button"
                     className="btn btn-outline-success btn-icon-text mr-2 ml-2"
+                    disabled={isReadOnly}
                   >
                     <i className="ti-camera btn-icon-prepend"></i>{" "}
                     {labels[2] || "Capture Image"}
@@ -1113,7 +1038,7 @@ export default function EntryForm() {
           <div className="col-md-6 col-lx-6" key={questionId}>
             <div className="form-group">
               <label className="font-weight-bold">
-               {questionName}
+                {questionName}
                 {isMandate === "1" && (
                   <span style={{ color: "red", marginLeft: "5px" }}>*</span>
                 )}
@@ -1141,6 +1066,7 @@ export default function EntryForm() {
                     e.target.value = value.replace(/[eE+-]/g, ""); // Removed unnecessary escape for '-'
                   }
                 }}
+                disabled={isReadOnly}
               />
               {errors[questionId] && (
                 <p className="invalid-feedback">{errors[questionId]}</p>
@@ -1169,6 +1095,7 @@ export default function EntryForm() {
                 }`}
                 value={answers[questionId] || ""}
                 onChange={(e) => handleInputChange(questionId, e.target.value)}
+                disabled={isReadOnly}
               />
               {errors[questionId] && (
                 <p className="invalid-feedback">{errors[questionId]}</p>
@@ -1224,7 +1151,7 @@ export default function EntryForm() {
                 left: 0,
                 right: 0,
                 background: "#fff",
-                zIndex: 2000,
+                zIndex: 1000,
                 padding: "12px 16px 10px",
                 borderBottom: "1px solid #eee",
               }}
