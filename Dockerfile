@@ -12,7 +12,12 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
+# Build arguments
+ARG REACT_APP_API_BASE_URL
+ENV REACT_APP_API_BASE_URL=$REACT_APP_API_BASE_URL
+
 # Build the app
+ENV CI=false
 RUN npm run build
 
 # Production stage

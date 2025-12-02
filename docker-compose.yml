@@ -5,8 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "3000:80"
+      args:
+        - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
+    # ports:
+    #   - "3000:80" # Commented out for Coolify to avoid port conflicts. Coolify handles routing.
     environment:
       - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
     env_file:
