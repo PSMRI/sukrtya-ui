@@ -1,45 +1,29 @@
-# Build stage
-FROM node:18-alpine as build
+# Use the official Node.js 20 LTS (Gallium) image
+FROM node:22-alpine
 
+# Set working directory inside the container
 WORKDIR /app
 
-# Copy package files
+# Copy package files first (for better layer caching)
 COPY package*.json ./
 
-# Install dependencies (use ci to respect lockfile)
-RUN npm ci --legacy-peer-deps
+# Install dependencies
+RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build arguments
-ARG REACT_APP_API_BASE_URL
-ENV REACT_APP_API_BASE_URL=$REACT_APP_API_BASE_URL
+# Create non-root user for security
+# RUN addgroup -g 1001 -S nodejs
+# RUN adduser -S nextjs -u 1001
+# USER nextjs
 
-# Build the app
-ENV CI=false
-RUN npm run build
+# Expose the port your app runs on (adjust as needed)
+EXPOSE 5173
 
-# Production stage
-FROM nginx:alpine
+# Health check (optional but recommended)
+# HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+#   CMD curl -f http://localhost:3000/health || exit 1
 
-# Copy built assets from build stage
-COPY --from=build /app/build /usr/share/nginx/html
-
-# Inline Nginx configuration for SPA (Single Page Application) support
-# This redirects all 404s to index.html so React Router can handle them
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    location / { \
-        root /usr/share/nginx/html; \
-        index index.html index.htm; \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
-
-# Expose port
-EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start the application
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
