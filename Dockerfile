@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with legacy peer deps flag
-RUN npm install --legacy-peer-deps
+# Install dependencies (use ci to respect lockfile)
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -23,21 +23,23 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-# Install envsubst
-RUN apk add --no-cache bash gettext
-
 # Copy built assets from build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/templates/default.conf.template
-
-# Script to replace environment variables and start nginx
-COPY docker-entrypoint.sh /
-RUN chmod +x /docker-entrypoint.sh
+# Inline Nginx configuration for SPA (Single Page Application) support
+# This redirects all 404s to index.html so React Router can handle them
+RUN echo 'server { \
+    listen 80; \
+    server_name localhost; \
+    location / { \
+        root /usr/share/nginx/html; \
+        index index.html index.htm; \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 80
 
-# Start nginx using the entrypoint script
-ENTRYPOINT ["/docker-entrypoint.sh"]
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
