@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: production
     container_name: sukrtya-ui
     ports:
       - "3000:3000"
