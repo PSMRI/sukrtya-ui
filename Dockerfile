@@ -1,5 +1,4 @@
-# Use the official Node.js 20 LTS (Gallium) image
-FROM node:22-alpine
+FROM node:18-alpine as build
 
 # Set working directory inside the container
 WORKDIR /app
