@@ -1,28 +1,44 @@
-FROM node:18-alpine as build
+# Multi-stage Dockerfile for Sukrtya UI React Application
 
-# Set working directory inside the container
+# Stage 1: Dependencies
+FROM node:18-alpine AS dependencies
+
 WORKDIR /app
 
-# Copy package files first (for better layer caching)
-COPY package*.json ./
+# Copy package files
+COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --only=production --legacy-peer-deps && \
+    npm cache clean --force
 
-# Copy source code
-COPY . .
+# Stage 2: Builder
+FROM node:18-alpine AS builder
 
-# Create non-root user for security
-# RUN addgroup -g 1001 -S nodejs
-# RUN adduser -S nextjs -u 1001
-# USER nextjs
+WORKDIR /app
 
-# Expose the port your app runs on (adjust as needed)
-EXPOSE 5173
+# Copy package files
+COPY package.json package-lock.json ./
 
-# Health check (optional but recommended)
-# HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-#   CMD curl -f http://localhost:3000/health || exit 1
+# Install all dependencies (including devDependencies)
+RUN npm install --legacy-peer-deps
 
-# Start the application
-CMD ["npm", "start", "--host", "0.0.0.0", "--port", "5173"]
+# Explicitly install ajv to fix module resolution issue
+RUN npm install ajv@^8 --legacy-peer-deps
+
+# Copy source code and public assets
+COPY public ./public
+COPY src ./src
+
+# Build the application
+RUN npm run build
+
+# Expose port 3000
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+# Set entrypoint
+ENTRYPOINT ["npm", "run", "start"]

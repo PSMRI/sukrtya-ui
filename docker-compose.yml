@@ -1,0 +1,25 @@
+services:
+  sukrtya-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: sukrtya-ui
+    ports:
+      - "3000:3000"
+    environment:
+      # API endpoint configuration
+      - REACT_APP_API_BASE_URL=https://sukrityaapi.sangha4u.in
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/health" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - sukrtya-network
+
+networks:
+  sukrtya-network:
+    driver: bridge
