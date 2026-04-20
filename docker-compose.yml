@@ -8,5 +8,5 @@ services:
       - "3000:3000"
     environment:
       # API endpoint configuration
-      - REACT_APP_API_BASE_URL=https://api.sukrtya.xyz
+      - REACT_APP_API_BASE_URL=https://sukrityavhsndapi.psmri.in
     restart: unless-stopped
