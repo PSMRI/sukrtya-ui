@@ -33,7 +33,7 @@ export default function NavBar() {
       if (!checkAuthToken()) return;
 
       const labelResponse = await axios.get(
-        `/sukrtya/api/language-labels/getLabels?formId=6&regLId=${localStorage.getItem(
+        `/api/language-labels/getLabels?formId=6&regLId=${localStorage.getItem(
           "language"
         )}`
       );
@@ -52,24 +52,13 @@ export default function NavBar() {
       if (!checkAuthToken()) return;
 
       const token = localStorage.getItem("authToken");
-      const profileResponse = await axios.post(
-        "/sukrtya/api/get-profile",
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const profileResponse = await axios.get("/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      if (profileResponse.data.status === "success") {
-        setData(profileResponse.data);
-        if (!profileResponse.data.message || profileResponse.data.message.trim() === "") {
-          handleSessionExpired();
-        }
-      } else {
-        handleSessionExpired();
-      }
+      setData(profileResponse.data || {});
     } catch (error) {
       console.error("Error fetching profile:", error);
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -196,11 +185,9 @@ export default function NavBar() {
               >
                 <a className="dropdown-item">
                   <i className="ti-user text-primary"></i>
-                  {data.message ? (
-                    <div className="text-success">{data.message}</div>
-                  ) : (
-                    <div className="text-danger">{data.error}</div>
-                  )}
+                  <div className="text-success">
+                    {data.displayName || data.username || data.role || "Profile"}
+                  </div>
                 </a>
                 <Link to="/change-password" className="dropdown-item">
                   <i className="ti-key text-primary"></i>

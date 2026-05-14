@@ -1,8 +1,22 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import LanguageData from "../Data/LanguageList.json";
 import axios from "axios";
+
+function decodeJwtPayload(token) {
+  try {
+    const base64Url = token.split(".")[1];
+    if (!base64Url) {
+      return {};
+    }
+
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    return JSON.parse(window.atob(paddedBase64));
+  } catch (error) {
+    return {};
+  }
+}
 
 // Safe localStorage helpers
 function safeLocalStorageGet(key) {
@@ -22,12 +36,10 @@ function safeLocalStorageSet(key, value) {
 }
 
 export default function Login() {
-  const allowedLanguages = ["1", "2"];
   const [loading, setLoading] = useState(false); // Loading state
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    language: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -57,34 +69,84 @@ export default function Login() {
     let isMounted = true;
 
     try {
-      const response = await axios.post(
-        "/sukrtya/api/login",
-        {
-          userName: formData.username,
-          password: formData.password,
-        }
-      );
-      //console.log(response.data.token);
-      const { userID, profileName, userName,assessmentID } = response.data.user;
+      const response = await axios.post("/api/auth/login", {
+        username: formData.username,
+        password: formData.password,
+      });
 
-      if (!userName) {
-        throw new Error("Token not provided in response");
+      const loginData = response.data || {};
+      const accessToken = loginData.accessToken;
+
+      if (!accessToken) {
+        throw new Error("Access token not provided in response");
       }
 
-      if (isMounted) {
+      const decodedToken = decodeJwtPayload(accessToken);
+      let userId = decodedToken.uid || decodedToken.userId || "";
 
-        // Update state only if the component is still mounted
-        safeLocalStorageSet("authToken", response.data.token);
-        safeLocalStorageSet("userID", userID);
-        safeLocalStorageSet("profileName", profileName);
-        safeLocalStorageSet("username", userName);
-        safeLocalStorageSet("language", formData.language);
-        safeLocalStorageSet("isApprover", response.data.user.approvalStatus);
-        //alert("Welcome - " + profileName);
-        navigate("/dashboard", {
-          state: { userId: userID, regLid: formData.language, mappingUserId: userID },
+      try {
+        const profileResponse = await axios.get("/api/auth/me", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         });
-        setSubmitted(true);
+
+        const profileData = profileResponse.data || {};
+        userId = profileData.userId || userId;
+
+        if (isMounted) {
+          safeLocalStorageSet("authToken", accessToken);
+          safeLocalStorageSet("tokenType", loginData.tokenType || "Bearer");
+          safeLocalStorageSet("userID", userId ? String(userId) : "");
+          safeLocalStorageSet(
+            "profileName",
+            profileData.displayName || loginData.displayName || formData.username
+          );
+          safeLocalStorageSet(
+            "username",
+            profileData.username || loginData.username || formData.username
+          );
+          safeLocalStorageSet("role", profileData.role || loginData.role || "");
+          safeLocalStorageSet(
+            "isApprover",
+            (profileData.role || loginData.role) === "ADMIN" ? "1" : "0"
+          );
+
+          navigate("/dashboard", {
+            state: {
+              userId: userId ? String(userId) : "",
+              mappingUserId: userId ? String(userId) : "",
+            },
+          });
+          setSubmitted(true);
+        }
+      } catch (profileError) {
+        if (isMounted) {
+          safeLocalStorageSet("authToken", accessToken);
+          safeLocalStorageSet("tokenType", loginData.tokenType || "Bearer");
+          safeLocalStorageSet("userID", userId ? String(userId) : "");
+          safeLocalStorageSet(
+            "profileName",
+            loginData.displayName || formData.username
+          );
+          safeLocalStorageSet(
+            "username",
+            loginData.username || formData.username
+          );
+          safeLocalStorageSet("role", loginData.role || "");
+          safeLocalStorageSet(
+            "isApprover",
+            loginData.role === "ADMIN" ? "1" : "0"
+          );
+
+          navigate("/dashboard", {
+            state: {
+              userId: userId ? String(userId) : "",
+              mappingUserId: userId ? String(userId) : "",
+            },
+          });
+          setSubmitted(true);
+        }
       }
     } catch (err) {
       if (isMounted) {
@@ -122,9 +184,6 @@ export default function Login() {
       newErrors.password = "Password is required";
     } else if (data.password.length < 3) {
       newErrors.password = "Password must be at least 3 characters";
-    }
-    if (!data.language) {
-      newErrors.language = "Language is required";
     }
     return newErrors;
   };
@@ -203,31 +262,6 @@ export default function Login() {
                           </div>
                         )}
                       </div></div>
-                    <div className="form-group">
-                      <select
-                        name="language"
-                        className={`text-primary form-control form-control-sm ${errors.language ? "is-invalid" : ""
-                          }`}
-                        value={formData.language}
-                        onChange={handleChange}
-                      >
-                        <option value="">Please select language..</option>
-                        {LanguageData.filter((option) =>
-                          allowedLanguages.includes(option.code)
-                        )
-                          .sort((a, b) => a.code.localeCompare(b.code))
-                          .map((getLanguage, index) => (
-                            <option value={getLanguage.code} key={index}>
-                              {getLanguage.nativeName}
-                            </option>
-                          ))}
-                      </select>
-                      {errors.language && (
-                        <div className="invalid-feedback">
-                          {errors.language}
-                        </div>
-                      )}
-                    </div>
                     <div className="mt-3">
                       <button disabled={loading}
                         type="submit"
@@ -248,17 +282,7 @@ export default function Login() {
                         <p style={{ color: "red" }}>{errors.global}</p>
                       )}{" "}
                     </div>
-                    <div className="my-2 d-flex justify-content-between align-items-center">
-                      <div className="form-check">
-                        <label className="form-check-label text-muted">
-                          <input type="checkbox" className="form-check-input" />
-                          Keep me signed in
-                        </label>
-                      </div>
-                      <a href="#" className="auth-link text-black">
-                        Forgot password?
-                      </a>
-                    </div>
+                    
                   </form>
                 </div>
               </div>

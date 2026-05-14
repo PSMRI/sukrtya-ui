@@ -4,11 +4,12 @@ import axios from 'axios';
 
 export default function Profile() {
   const [labels, setLabels] = useState({});
+  const [profile, setProfile] = useState({});
   useEffect(() => {
     const fetchLabel = async () => {
       try {
         const labelResponse = await axios.get(
-          `/sukrtya/api/language-labels/getLabels?formId=5&regLId=${localStorage.getItem("language")}`
+          `/api/language-labels/getLabels?formId=5&regLId=${localStorage.getItem("language")}`
         );
         setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
       } catch (error) {
@@ -16,6 +17,29 @@ export default function Profile() {
       }
     };
     fetchLabel();
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          return;
+        }
+
+        const profileResponse = await axios.get("/api/auth/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setProfile(profileResponse.data || {});
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+
+    fetchProfile();
   }, []);
   return (
     <Base title="Profile">
@@ -32,16 +56,16 @@ export default function Profile() {
                   </p>
 
                   <div className="form-group">
-                    <label>{labels[1] || "Profile Name"}</label>
-                    <input type="text" disabled className="form-control form-control-sm" placeholder="Deepak Kumar (BHM)" aria-label="Username" />
+                    <label>{labels[1] || "Name"}</label>
+                    <input type="text" disabled className="form-control form-control-sm" value={profile.displayName || localStorage.getItem("profileName") || ""} aria-label="Username" readOnly />
                   </div>
                   <div className="form-group">
-                    <label>{labels[3] || "User Type"}</label>
-                    <input type="text" disabled className="form-control form-control-sm" placeholder="BHM" aria-label="Username" />
+                    <label>{labels[3] || "Role"}</label>
+                    <input type="text" disabled className="form-control form-control-sm" value={profile.role || localStorage.getItem("role") || ""} aria-label="Username" readOnly />
                   </div>
                   <div className="form-group">
-                    <label>{labels[9] || "Address"}</label>
-                    <input type="text" disabled className="form-control form-control-sm" placeholder="Patna" aria-label="Username" />
+                    <label>{labels[9] || "Mobile No."}</label>
+                    <input type="text" disabled className="form-control form-control-sm" value={profile.username || localStorage.getItem("username") || ""} aria-label="Username" readOnly />
                   </div>
                   {/* <button type="submit" disabled className="btn btn-primary mr-2" style={{ width: "100%" }}>{labels[22] || "Update Profile"}</button> */}
                 </div>

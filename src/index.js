@@ -13,12 +13,8 @@ import ChangePassword from "./Pages/ChangePassword";
 import Profile from "./Pages/Profile";
 
 // Set axios default baseURL from environment variable
-axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || 'https://sukrityaapi.sangha4u.in';
-console.log("API Base URL:", axios.defaults.baseURL);
-// Optional: Set other defaults, like headers
-//axios.defaults.headers.common['Authorization'] = 'Bearer your_token_if_any';
-//axios.defaults.headers.post['Content-Type'] = 'application/json';
-//axios.defaults.withCredentials = true;
+axios.defaults.baseURL =
+  process.env.REACT_APP_API_BASE_URL || 'https://sukrtyasiwanapi.psmri.in';
 
 const router = createBrowserRouter([
   {

@@ -16,7 +16,7 @@ export default function ForgotPassword() {
     setError('');
 
     try {
-      const response = await axios.post('/sukrtya/api/forgot-password', { email });
+      const response = await axios.post('/api/forgot-password', { email });
       setMessage(response.data.message || 'Password reset instructions have been sent to your email.');
     } catch (err) {
       setError(

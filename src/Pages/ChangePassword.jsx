@@ -9,7 +9,7 @@ export default function ChangePassword() {
         const fetchLabel = async () => {
             try {
                 const labelResponse = await axios.get(
-                    `/sukrtya/api/language-labels/getLabels?formId=6&regLId=${localStorage.getItem("language")}`
+                    `/api/language-labels/getLabels?formId=6&regLId=${localStorage.getItem("language")}`
                 );
                 setLabels(labelResponse.data[0]); // Assuming response is an array with labels as key-value pairs
             } catch (error) {
@@ -48,19 +48,20 @@ export default function ChangePassword() {
     
         try {
             const token = localStorage.getItem("authToken");
-            const response = await axios.post(
-                "/sukrtya/api/change-password",
-                {
-                    oldPassword: formData.oldPassword,
-                    newPassword: formData.newPassword,
-                    confirmPassword: formData.confirmPassword,
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            const response="";
+            // const response = await axios.post(
+            //     "/api/change-password",
+            //     {
+            //         oldPassword: formData.oldPassword,
+            //         newPassword: formData.newPassword,
+            //         confirmPassword: formData.confirmPassword,
+            //     },
+            //     {
+            //         headers: {
+            //             Authorization: `Bearer ${token}`,
+            //         },
+            //     }
+            // );
             alert(response.data.message);
             navigate("/login");
         } catch (error) {
@@ -223,7 +224,7 @@ export default function ChangePassword() {
                                                     </div>
                                                 )}</div>
                                         </div>
-                                        <button disabled={loading}
+                                        <button disabled={true}
                                             type="submit" style={{ width: "100%" }}
                                             className="btn btn-primary mr-2"
                                         > {loading ? (

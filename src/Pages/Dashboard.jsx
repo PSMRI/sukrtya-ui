@@ -3,6 +3,74 @@ import { useLocation, useNavigate } from "react-router";
 import Base from "../Components/Base";
 import axios from "axios";
 
+const normalizeMasterContext = (masterContext) => {
+  const districtMap = new Map();
+
+  (masterContext?.facilities || []).forEach((entry, index) => {
+    const district = entry.district || {};
+    const block = entry.block || {};
+    const facility = entry.facility || {};
+
+    const districtCode = String(district.id ?? `district-${index}`);
+    if (!districtMap.has(districtCode)) {
+      districtMap.set(districtCode, {
+        districtCode,
+        districtName: district.name || "Unknown District",
+        blockMap: new Map(),
+      });
+    }
+
+    const districtRecord = districtMap.get(districtCode);
+    const blockCode = String(block.id ?? `block-${index}`);
+
+    if (!districtRecord.blockMap.has(blockCode)) {
+      districtRecord.blockMap.set(blockCode, {
+        blockCode,
+        blockName: block.name || "Unknown Block",
+        clusterMap: new Map(),
+      });
+    }
+
+    const blockRecord = districtRecord.blockMap.get(blockCode);
+    const clusterId = Number(facility.id ?? index + 1);
+    const clusterKey = String(clusterId);
+
+    if (!blockRecord.clusterMap.has(clusterKey)) {
+      blockRecord.clusterMap.set(clusterKey, {
+        clusterId,
+        clusterName: facility.name || "Facility",
+        facilities: [],
+      });
+    }
+
+    blockRecord.clusterMap.get(clusterKey).facilities.push({
+      facilityId: facility.id,
+      facilityName: facility.name,
+      facilityNin: facility.code,
+      facilityTypeId: facility.facilityType === "HWC" ? 8 : 8,
+      facilityTypeCode: facility.facilityType,
+      facilityType: facility.facilityType,
+      assessmentId: 1,
+      districtId: district.id,
+      blockId: block.id,
+    });
+  });
+
+  return [
+    {
+      mappedFacilities: Array.from(districtMap.values()).map((district) => ({
+        districtCode: district.districtCode,
+        districtName: district.districtName,
+        blocks: Array.from(district.blockMap.values()).map((block) => ({
+          blockCode: block.blockCode,
+          blockName: block.blockName,
+          clusters: Array.from(block.clusterMap.values()),
+        })),
+      })),
+    },
+  ];
+};
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,11 +83,23 @@ export default function Dashboard() {
       navigate("/login", { replace: true });
     }
   }, [userId, mappingUserId, navigate]);
+  
+  // Get user role
+  const userRole = localStorage.getItem("role");
+  
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [data, setData] = useState([]);
   const [labels, setLabels] = useState({});
   const [errors, setErrors] = useState({});
+  
+  // Admin dashboard state
+  const [adminDashboardData, setAdminDashboardData] = useState(null);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState({ type: "", text: "" });
   
   // Loading states for dropdowns
   const [districtLoading, setDistrictLoading] = useState(true);
@@ -65,13 +145,13 @@ export default function Dashboard() {
 
   // Memoized API endpoints
   const labelEndpoint = useMemo(() => 
-    `/sukrtya/api/language-labels/getLabels?formId=2&regLId=${localStorage.getItem("language")}`, 
+    `/api/language-labels/getLabels?formId=2&regLId=${localStorage.getItem("language")}`, 
     []
   );
 
   const facilitiesEndpoint = useMemo(() => 
-    `/sukrtya/api/facilities?UserId=${userId}&RegLid=${localStorage.getItem("language")}&MappingUserId=${mappingUserId}`,
-    [userId, mappingUserId]
+    "/api/me/master-context",
+    []
   );
 
   // Fetch labels
@@ -87,6 +167,31 @@ export default function Dashboard() {
     fetchLabel();
   }, [labelEndpoint]);
 
+  // Fetch admin dashboard data
+  useEffect(() => {
+    if (userRole === "ADMIN") {
+      const fetchAdminDashboard = async () => {
+        setAdminLoading(true);
+        try {
+          const token = localStorage.getItem("authToken");
+          const response = await axios.get("/api/admin/dashboard/summary", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setAdminDashboardData(response.data);
+        } catch (error) {
+          console.error("Error fetching admin dashboard:", error);
+          setErrors(prev => ({
+            ...prev,
+            admin: error.response?.data?.message || "Error loading admin dashboard"
+          }));
+        } finally {
+          setAdminLoading(false);
+        }
+      };
+      fetchAdminDashboard();
+    }
+  }, [userRole]);
+
   // Fetch facilities data
   useEffect(() => {
     const fetchData = async () => {
@@ -96,18 +201,16 @@ export default function Dashboard() {
         const response = await axios.get(facilitiesEndpoint, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setData(response.data);
-        
-        // Process hierarchical data
-        if (response.data && response.data.length > 0 && response.data[0].mappedFacilities) {
-          const districtList = response.data[0].mappedFacilities.map(d => ({
+        const normalizedData = normalizeMasterContext(response.data);
+        setData(normalizedData);
+
+        if (normalizedData && normalizedData.length > 0 && normalizedData[0].mappedFacilities) {
+          const districtList = normalizedData[0].mappedFacilities.map(d => ({
             code: d.districtCode,
             name: d.districtName
           }));
           setDistricts(districtList);
         }
-        setDistrictLoading(false);
-       
       } catch (error) {
         if (error.response?.status === 401) {
           alert("Session expired. Please log in again.");
@@ -119,6 +222,8 @@ export default function Dashboard() {
                    "An unexpected error occurred. Please login again after logout."+error
           });
         }
+      } finally {
+        setDistrictLoading(false);
       }
     };
     fetchData();
@@ -229,7 +334,49 @@ export default function Dashboard() {
      
   }, [navigate]);
 
-  // Memoized filtered data
+  // Handle Excel file upload
+  const handleFileUpload = async () => {
+    if (!uploadFile) {
+      setUploadMessage({ type: "error", text: "Please select a file to upload" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+
+      const response = await axios.post("/api/admin/masters/import-excel", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setUploadMessage({ 
+        type: "success", 
+        text: response.data?.message || "File uploaded successfully!" 
+      });
+      
+      // Reset file and close modal after 2 seconds
+      setTimeout(() => {
+        setUploadFile(null);
+        setShowUploadModal(false);
+        setUploadMessage({ type: "", text: "" });
+        // Optionally refresh admin dashboard data
+        window.location.reload();
+      }, 2000);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      setUploadMessage({
+        type: "error",
+        text: error.response?.data?.message || "Error uploading file. Please try again.",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
   const filteredData = useMemo(() => {
     if (!selectedCluster || !facilities.length) return [];
     
@@ -270,7 +417,234 @@ export default function Dashboard() {
       <div className="container-fluid page-body-wrapper">
         <div className="main-panel">
           <div className="content-wrapper">
-            <div className="row" style={headerStyles}>
+            {userRole === "ADMIN" ? (
+              // Admin Dashboard
+              <>
+                <div className="row" style={headerStyles}>
+                  <div className="col-md-6">
+                    <h3 className="font-weight-bold text-capitalize">
+                      {labels[4] || "Welcome"},
+                      <span className="text-success">{userInfo.profileName}</span>
+                    </h3>
+                    <h6 className="font-weight-normal mb-0">
+                      <span className="text-primary">Admin Dashboard</span>
+                    </h6>
+                  </div>
+                  <div className="col-md-6 text-right">
+                    <button
+                      className="btn btn-success"
+                      onClick={() => {
+                        setShowUploadModal(true);
+                        setUploadFile(null);
+                        setUploadMessage({ type: "", text: "" });
+                      }}
+                    >
+                      <i className="icon-upload"></i> Import Excel
+                    </button>
+                  </div>
+                </div>
+
+                {adminLoading ? (
+                  <div className="text-center" style={{ padding: "50px" }}>
+                    <img
+                      alt="loading"
+                      src="./images/loading.gif"
+                      style={{ height: "100px" }}
+                    />
+                    <p className="mt-3">Loading dashboard data...</p>
+                  </div>
+                ) : adminDashboardData ? (
+                  <div className="row mt-4">
+                    {/* Geography Section */}
+                    <div className="col-md-4 mb-4">
+                      <div className="card bg-light">
+                        <div className="card-header bg-primary text-white">
+                          <h5 className="mb-0 font-weight-bold">Geography</h5>
+                        </div>
+                        <div className="card-body">
+                          <table className="table table-sm">
+                            <tbody>
+                              <tr>
+                                <td><strong>Total Districts</strong></td>
+                                <td className="text-right"><span className="badge badge-primary">{adminDashboardData.geography?.totalDistricts || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Active Districts</strong></td>
+                                <td className="text-right"><span className="badge badge-success">{adminDashboardData.geography?.activeDistricts || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Total Blocks</strong></td>
+                                <td className="text-right"><span className="badge badge-primary">{adminDashboardData.geography?.totalBlocks || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Active Blocks</strong></td>
+                                <td className="text-right"><span className="badge badge-success">{adminDashboardData.geography?.activeBlocks || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Total Facilities</strong></td>
+                                <td className="text-right"><span className="badge badge-primary">{adminDashboardData.geography?.totalFacilities || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Active Facilities</strong></td>
+                                <td className="text-right"><span className="badge badge-success">{adminDashboardData.geography?.activeFacilities || 0}</span></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Staff Assignments Section */}
+                    <div className="col-md-4 mb-4">
+                      <div className="card bg-light">
+                        <div className="card-header bg-success text-white">
+                          <h5 className="mb-0 font-weight-bold">Active Staff Assignments</h5>
+                        </div>
+                        <div className="card-body">
+                          <table className="table table-sm">
+                            <tbody>
+                              <tr>
+                                <td><strong>CHO</strong></td>
+                                <td className="text-right"><span className="badge badge-info">{adminDashboardData.activeStaffAssignmentsByRole?.cho || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>ANM</strong></td>
+                                <td className="text-right"><span className="badge badge-info">{adminDashboardData.activeStaffAssignmentsByRole?.anm || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>ASHA Facilitator</strong></td>
+                                <td className="text-right"><span className="badge badge-info">{adminDashboardData.activeStaffAssignmentsByRole?.ashaFacilitator || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>ASHA</strong></td>
+                                <td className="text-right"><span className="badge badge-warning">{adminDashboardData.activeStaffAssignmentsByRole?.asha || 0}</span></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Worker Assignments Status Section */}
+                    <div className="col-md-4 mb-4">
+                      <div className="card bg-light">
+                        <div className="card-header bg-warning text-dark">
+                          <h5 className="mb-0 font-weight-bold">Worker Assignments Status</h5>
+                        </div>
+                        <div className="card-body">
+                          <table className="table table-sm">
+                            <tbody>
+                              <tr>
+                                <td><strong>Active</strong></td>
+                                <td className="text-right"><span className="badge badge-success">{adminDashboardData.facilityWorkerAssignmentsByStatus?.active || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Disabled</strong></td>
+                                <td className="text-right"><span className="badge badge-danger">{adminDashboardData.facilityWorkerAssignmentsByStatus?.disabled || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Unmapped</strong></td>
+                                <td className="text-right"><span className="badge badge-secondary">{adminDashboardData.facilityWorkerAssignmentsByStatus?.unmapped || 0}</span></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Portal User Facilities Section */}
+                    <div className="col-md-4 mb-4">
+                      <div className="card bg-light">
+                        <div className="card-header bg-info text-white">
+                          <h5 className="mb-0 font-weight-bold">Portal User Facilities</h5>
+                        </div>
+                        <div className="card-body">
+                          <table className="table table-sm">
+                            <tbody>
+                              <tr>
+                                <td><strong>Facilities with Active Users</strong></td>
+                                <td className="text-right"><span className="badge badge-primary">{adminDashboardData.portalUserFacility?.distinctFacilitiesWithActivePortalUser || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Active Facilities without Users</strong></td>
+                                <td className="text-right"><span className="badge badge-warning">{adminDashboardData.portalUserFacility?.activeFacilitiesWithoutPortalUser || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Total Portal Users</strong></td>
+                                <td className="text-right"><span className="badge badge-success">{adminDashboardData.portalUserFacility?.totalPortalUsers || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Enabled Users</strong></td>
+                                <td className="text-right"><span className="badge badge-success">{adminDashboardData.portalUserFacility?.enabledPortalUsers || 0}</span></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CHO at Facilities Section */}
+                    <div className="col-md-4 mb-4">
+                      <div className="card bg-light">
+                        <div className="card-header bg-danger text-white">
+                          <h5 className="mb-0 font-weight-bold">CHO at Active Facilities</h5>
+                        </div>
+                        <div className="card-body">
+                          <table className="table table-sm">
+                            <tbody>
+                              <tr>
+                                <td><strong>Facilities with Active CHO</strong></td>
+                                <td className="text-right"><span className="badge badge-success">{adminDashboardData.choAtActiveFacilities?.activeFacilitiesWithActiveCho || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Facilities without Active CHO</strong></td>
+                                <td className="text-right"><span className="badge badge-danger">{adminDashboardData.choAtActiveFacilities?.activeFacilitiesWithoutActiveCho || 0}</span></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Health Workers Section */}
+                    <div className="col-md-4 mb-4">
+                      <div className="card bg-light">
+                        <div className="card-header bg-secondary text-white">
+                          <h5 className="mb-0 font-weight-bold">Health Workers</h5>
+                        </div>
+                        <div className="card-body">
+                          <table className="table table-sm">
+                            <tbody>
+                              <tr>
+                                <td><strong>Total Workers</strong></td>
+                                <td className="text-right"><span className="badge badge-primary">{adminDashboardData.healthWorkers?.total || 0}</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>Active Workers</strong></td>
+                                <td className="text-right"><span className="badge badge-success">{adminDashboardData.healthWorkers?.active || 0}</span></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="alert alert-warning mt-4">
+                    No admin dashboard data available
+                  </div>
+                )}
+
+                {errors.admin && (
+                  <div className="alert alert-danger mt-3">
+                    {errors.admin}
+                  </div>
+                )}
+              </>
+            ) : (
+              // Regular User Dashboard
+              <>
+                <div className="row" style={headerStyles}>
               <div className="col-md-4">
                 <h3 className="font-weight-bold text-capitalize">
                   {labels[4] || "Welcome"},
@@ -300,11 +674,11 @@ export default function Dashboard() {
                   <small>
                     {selectedCluster ? (
                       filteredData.length > 0 ? (
-                        <span className="text-success">Found {filteredData.length} VHSND Center(s)</span>
+                        <span className="text-success">Found {filteredData.length}  Center(s)</span>
                       ) : searchText ? (
-                        <span className="text-danger">No VHSND center found matching "{searchText}"</span>
+                        <span className="text-danger">No  center found matching "{searchText}"</span>
                       ) : (
-                        <span className="text-info">Total {facilities.length} VHSND Centers</span>
+                        <span className="text-info">Total {facilities.length}  Centers</span>
                       )
                     ) : (
                       <span className="text-warning">Please select a facility to see results</span>
@@ -533,9 +907,9 @@ export default function Dashboard() {
                         loading="lazy"
                       />
                       <div style={{ textAlign: "right" }}>
-                        VHSND Center: <strong>{item.facilityName}</strong>
+                         <strong>{item.facilityName}</strong>
                         <br />
-                        <small>NIN No.: {item.facilityNin}</small>
+                        <small>Code: {item.facilityNin}</small>
                       </div>
                     </nav>
                     <div style={{ padding: "20px" }}>
@@ -579,9 +953,116 @@ export default function Dashboard() {
               ))}
             </div>
             {errors.global && <p style={{ color: "red" }}>{errors.global}</p>}
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div
+          className="modal"
+          style={{
+            display: "block",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 1000,
+          }}
+          onClick={() => !uploading && setShowUploadModal(false)}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header bg-primary text-white">
+                <h5 className="modal-title font-weight-bold">Import Excel File</h5>
+                <button
+                  type="button"
+                  className="close text-white"
+                  onClick={() => !uploading && setShowUploadModal(false)}
+                  disabled={uploading}
+                  style={{ cursor: uploading ? "not-allowed" : "pointer" }}
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="font-weight-bold">Select Excel File</label>
+                  <input
+                    type="file"
+                    className="form-control-file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      setUploadFile(file);
+                      setUploadMessage({ type: "", text: "" });
+                    }}
+                    disabled={uploading}
+                  />
+                  <small className="text-muted">
+                    Supported formats: .xlsx, .xls, .csv
+                  </small>
+                </div>
+
+                {uploadFile && (
+                  <div className="alert alert-info mt-3">
+                    <strong>Selected File:</strong> {uploadFile.name}
+                    <br />
+                    <strong>Size:</strong> {(uploadFile.size / 1024).toFixed(2)} KB
+                  </div>
+                )}
+
+                {uploadMessage.text && (
+                  <div
+                    className={`alert alert-${uploadMessage.type === "success" ? "success" : "danger"} mt-3`}
+                    role="alert"
+                  >
+                    {uploadMessage.text}
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowUploadModal(false)}
+                  disabled={uploading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  onClick={handleFileUpload}
+                  disabled={uploading || !uploadFile}
+                  style={{ cursor: uploading || !uploadFile ? "not-allowed" : "pointer" }}
+                >
+                  {uploading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm mr-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                      Uploading...
+                    </>
+                  ) : (
+                    "Upload"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Base>
   );
 }

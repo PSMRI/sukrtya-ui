@@ -6,14 +6,14 @@ export default function Footer() {
      <footer className="footer">
               <div className="d-sm-flex justify-content-center justify-content-sm-between">
                 <span className="text-muted text-center text-sm-left d-block d-sm-inline-block" title='04032025080250PM'>
-                  Copyright © 2025. All rights reserved.
+                  Copyright © 2026. All rights reserved.
                 </span>
                 <span className="text-muted text-center text-sm-left d-block d-sm-inline-block">
                   Design & Developed by{" "}
                   <a href="https://www.piramalswasthya.org/" target="_blank">
                     Piramalswasthya
                   </a>
-                </span> <div className="d-sm-flex justify-content-center justify-content-sm-between"><span className="text-muted">last update on </span>&nbsp;19-Aug-2025</div>
+                </span> <div className="d-sm-flex justify-content-center justify-content-sm-between"><span className="text-muted">last update on </span>&nbsp;14-May-2026</div>
               </div>
              
             </footer>

@@ -163,7 +163,7 @@ export default function EntryForm() {
     const fetchLabel = async () => {
       try {
         const labelResponse = await axios.get(
-          `/sukrtya/api/language-labels/getLabels?formId=4&regLId=${localStorage.getItem(
+          `/api/language-labels/getLabels?formId=4&regLId=${localStorage.getItem(
             "language"
           )}`
         );
@@ -181,7 +181,7 @@ export default function EntryForm() {
       try {
         const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
         const response = await axios.get(
-          `/sukrtya/api/questions?formId=${formId}&transActionId=${transActionId}&RegLId=${localStorage.getItem(
+          `/api/questions?formId=${formId}&transActionId=${transActionId}&RegLId=${localStorage.getItem(
             "language"
           )}`,
           {
@@ -668,7 +668,7 @@ export default function EntryForm() {
       try {
         // console.log("Submitting data:", postData);
         const saveResponse = await fetchData(
-          "/sukrtya/api/assessments/save",
+          "/api/assessments/save",
           "post",
           postData,
           token
@@ -676,7 +676,7 @@ export default function EntryForm() {
         //console.log(postData);
 
         await fetchData(
-          "/sukrtya/api/form-approval/auditTrail",
+          "/api/form-approval/auditTrail",
           "post",
           {
             actionId: 1,
@@ -758,14 +758,14 @@ export default function EntryForm() {
 
         try {
           await fetchData(
-            "/sukrtya/api/assessments/save",
+            "/api/assessments/save",
             "post",
             postData,
             token
           );
 
           await fetchData(
-            "/sukrtya/api/form-approval/update",
+            "/api/form-approval/update",
             "put",
             {
               userId: userId,
@@ -777,7 +777,7 @@ export default function EntryForm() {
           );
 
           await fetchData(
-            "/sukrtya/api/form-approval/auditTrail",
+            "/api/form-approval/auditTrail",
             "post",
             {
               actionId: 2,
@@ -814,7 +814,7 @@ export default function EntryForm() {
 
       try {
         await fetchData(
-          "/sukrtya/api/form-approval/update",
+          "/api/form-approval/update",
           "put",
           {
             userId: userId,
@@ -826,7 +826,7 @@ export default function EntryForm() {
         );
 
         await fetchData(
-          "/sukrtya/api/form-approval/auditTrail",
+          "/api/form-approval/auditTrail",
           "post",
           {
             actionId: 4,
