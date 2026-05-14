@@ -1,20 +1,29 @@
 version: '3.8'
 
 services:
-  web:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
-
+    image: sukrtya-ui
+    container_name: sukrtya-ui
     environment:
+      - NODE_ENV=production
       - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
     env_file:
       - .env
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
-      timeout: 10s
-      retries: 3 
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - sukrtya-network
+
+networks:
+  sukrtya-network:
+    driver: bridge 
