@@ -7,8 +7,8 @@ services:
       dockerfile: Dockerfile
       args:
         REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
-    image: sukrtya-ui
-    container_name: sukrtya-ui
+    image: sukrtya-ui-siwan
+    container_name: sukrtya-ui-siwan
     environment:
       - NODE_ENV=production
       - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
