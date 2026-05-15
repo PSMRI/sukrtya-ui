@@ -100,6 +100,7 @@ export default function Dashboard() {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState({ type: "", text: "" });
+  const [uploadResponse, setUploadResponse] = useState(null);
   
   // Loading states for dropdowns
   const [districtLoading, setDistrictLoading] = useState(true);
@@ -342,6 +343,9 @@ export default function Dashboard() {
     }
 
     setUploading(true);
+    setUploadMessage({ type: "", text: "" });
+    setUploadResponse(null);
+    
     try {
       const token = localStorage.getItem("authToken");
       const formData = new FormData();
@@ -354,19 +358,18 @@ export default function Dashboard() {
         },
       });
 
-      setUploadMessage({ 
-        type: "success", 
-        text: response.data?.message || "File uploaded successfully!" 
-      });
-      
-      // Reset file and close modal after 2 seconds
-      setTimeout(() => {
-        setUploadFile(null);
-        setShowUploadModal(false);
-        setUploadMessage({ type: "", text: "" });
-        // Optionally refresh admin dashboard data
-        window.location.reload();
-      }, 2000);
+      if (response.data?.success) {
+        setUploadMessage({ 
+          type: "success", 
+          text: response.data?.message || "File uploaded successfully!" 
+        });
+        setUploadResponse(response.data);
+      } else {
+        setUploadMessage({
+          type: "error",
+          text: response.data?.message || "Upload failed. Please try again.",
+        });
+      }
     } catch (error) {
       console.error("Error uploading file:", error);
       setUploadMessage({
@@ -376,6 +379,14 @@ export default function Dashboard() {
     } finally {
       setUploading(false);
     }
+  };
+
+  // Handle modal close
+  const handleCloseUploadModal = () => {
+    setShowUploadModal(false);
+    setUploadFile(null);
+    setUploadMessage({ type: "", text: "" });
+    setUploadResponse(null);
   };
   const filteredData = useMemo(() => {
     if (!selectedCluster || !facilities.length) return [];
@@ -437,6 +448,7 @@ export default function Dashboard() {
                         setShowUploadModal(true);
                         setUploadFile(null);
                         setUploadMessage({ type: "", text: "" });
+                        setUploadResponse(null);
                       }}
                     >
                       <i className="icon-upload"></i> Import Excel
@@ -962,102 +974,394 @@ export default function Dashboard() {
       {/* Upload Modal */}
       {showUploadModal && (
         <div
-          className="modal"
+          className="modal fade show"
           style={{
             display: "block",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: "rgba(0, 0, 0, 0.55)",
             position: "fixed",
             top: 0,
             left: 0,
             width: "100%",
             height: "100%",
-            zIndex: 1000,
+            zIndex: 1050,
+            animation: "fadeIn 0.3s ease-in",
           }}
-          onClick={() => !uploading && setShowUploadModal(false)}
+          onClick={!uploading && !uploadResponse ? handleCloseUploadModal : null}
         >
           <div
-            className="modal-dialog modal-dialog-centered"
-            style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
+            className="modal-dialog modal-lg modal-dialog-centered"
+            style={{
+              position: "absolute",
+              top: "30%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              maxWidth: "520px",
+              width: "90%",
+              maxHeight: "90vh",
+              animation: "slideUp 0.4s ease-out",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-content">
-              <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title font-weight-bold">Import Excel File</h5>
+            <style>{`
+              @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+              @keyframes slideUp { from { transform: translate(-50%, -20%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+              .upload-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4); }
+              .upload-btn:active:not(:disabled) { transform: translateY(0); }
+            `}</style>
+            <div className="modal-content" style={{ borderRadius: "12px", border: "none", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", display: "flex", flexDirection: "column", maxHeight: "90vh" }}>
+              {/* Header */}
+              <div 
+                className="modal-header" 
+                style={{
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "white",
+                  borderTopLeftRadius: "12px",
+                  borderTopRightRadius: "12px",
+                  borderBottom: "none",
+                  padding: "16px 20px",
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <h5 className="modal-title font-weight-bold mb-0" style={{ fontSize: "18px", fontWeight: "600" }}>
+                    <i className="icon-cloud-upload mr-2" style={{ fontSize: "20px" }}></i>Import Excel Data
+                  </h5>
+                </div>
                 <button
                   type="button"
                   className="close text-white"
-                  onClick={() => !uploading && setShowUploadModal(false)}
+                  onClick={handleCloseUploadModal}
                   disabled={uploading}
-                  style={{ cursor: uploading ? "not-allowed" : "pointer" }}
+                  style={{ 
+                    cursor: uploading ? "not-allowed" : "pointer",
+                    opacity: uploading ? 0.5 : 0.8,
+                    fontSize: "28px",
+                    padding: 0,
+                    marginTop: "-8px",
+                  }}
                 >
-                  &times;
+                  <span aria-hidden="true">&times;</span>
                 </button>
               </div>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="font-weight-bold">Select Excel File</label>
-                  <input
-                    type="file"
-                    className="form-control-file"
-                    accept=".xlsx,.xls,.csv"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      setUploadFile(file);
-                      setUploadMessage({ type: "", text: "" });
+
+              {/* Body */}
+              <div className="modal-body" style={{ padding: "20px 20px", flex: "1", overflowY: "auto", minHeight: 0 }}>
+                {!uploadResponse ? (
+                  <>
+                    {/* File Selection Section */}
+                    <div className="form-group mb-2">
+                      <label className="font-weight-bold mb-2" style={{ fontSize: "13px", color: "#2c3e50", display: "block" }}>
+                        <i className="icon-file mr-1" style={{ color: "#667eea", fontSize: "13px" }}></i>
+                        Select Your Excel File
+                      </label>
+                      <div 
+                        className="custom-file-upload"
+                        style={{
+                          border: "2px dashed #667eea",
+                          borderRadius: "8px",
+                          padding: "24px 16px",
+                          textAlign: "center",
+                          backgroundColor: "#f8f9ff",
+                          cursor: uploading ? "not-allowed" : "pointer",
+                          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                          opacity: uploading ? 0.6 : 1,
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          if (!uploading) e.currentTarget.style.backgroundColor = "#e7f0ff";
+                        }}
+                        onDragLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f8f9ff";
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const file = e.dataTransfer.files?.[0];
+                          if (file && !uploading) {
+                            setUploadFile(file);
+                            setUploadMessage({ type: "", text: "" });
+                          }
+                        }}
+                      >
+                        <input
+                          type="file"
+                          className="form-control-file"
+                          accept=".xlsx,.xls,.csv"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            setUploadFile(file);
+                            setUploadMessage({ type: "", text: "" });
+                          }}
+                          disabled={uploading}
+                          style={{ display: "none" }}
+                          id="excel-file-input"
+                        />
+                        <label htmlFor="excel-file-input" style={{ cursor: "pointer", marginBottom: 0 }}>
+                          <i className="icon-cloud-upload" style={{ fontSize: "32px", color: "#667eea", marginBottom: "8px", display: "block" }}></i>
+                          <p style={{ color: "#667eea", fontWeight: "600", marginBottom: "3px", fontSize: "13px" }}>
+                            Click to select or drag and drop
+                          </p>
+                          <small style={{ color: "#999", fontSize: "11px" }}>Supported: <strong>.xlsx, .xls, .csv</strong></small>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Selected File Info */}
+                    {uploadFile && (
+                      <div 
+                        className="alert mb-0 mt-2" 
+                        style={{
+                          backgroundColor: "#d1ecf1",
+                          border: "1px solid #bee5eb",
+                          borderRadius: "6px",
+                          padding: "10px 12px",
+                          marginBottom: "0",
+                          animation: "slideUp 0.3s ease-out",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <i className="icon-file-check" style={{ color: "#0c5460", fontSize: "16px" }}></i>
+                          <div style={{ flex: 1 }}>
+                            <strong style={{ color: "#0c5460", display: "block", fontSize: "12px" }}>{uploadFile.name}</strong>
+                            <small style={{ color: "#0c5460", opacity: 0.8, fontSize: "11px" }}>{(uploadFile.size / 1024).toFixed(2)} KB</small>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error Message */}
+                    {uploadMessage.type === "error" && (
+                      <div 
+                        className="alert alert-danger mt-2 mb-0" 
+                        role="alert"
+                        style={{
+                          borderRadius: "6px",
+                          borderLeft: "4px solid #dc3545",
+                          padding: "10px 12px",
+                          backgroundColor: "#f8d7da",
+                          border: "1px solid #f5c6cb",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                          <i className="icon-alert-circle" style={{ color: "#721c24", fontSize: "14px", marginTop: "1px", flexShrink: 0 }}></i>
+                          <div>
+                            <strong style={{ color: "#721c24", fontSize: "12px" }}>Error</strong>
+                            <p style={{ marginBottom: 0, marginTop: "2px", fontSize: "11px", color: "#721c24" }}>{uploadMessage.text}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Success Response Display */
+                  <div style={{ animation: "slideUp 0.4s ease-out" }}>
+                    {/* Success Header */}
+                    <div style={{ textAlign: "center", marginBottom: "14px" }}>
+                      <div 
+                        style={{
+                          width: "56px",
+                          height: "56px",
+                          borderRadius: "50%",
+                          backgroundColor: "#d4edda",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          margin: "0 auto 10px",
+                          boxShadow: "0 4px 12px rgba(40, 167, 69, 0.2)",
+                        }}
+                      >
+                        <i className="icon-check-circle" style={{ color: "#28a745", fontSize: "28px" }}></i>
+                      </div>
+                      <h5 style={{ color: "#28a745", fontWeight: "600", marginBottom: "4px", fontSize: "16px" }}>
+                        Import Successful!
+                      </h5>
+                      <p style={{ color: "#666", marginBottom: 0, fontSize: "12px", lineHeight: 1.4 }}>
+                        {uploadMessage.text}
+                      </p>
+                    </div>
+
+                    {/* Summary Cards */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
+                      <div 
+                        style={{
+                          backgroundColor: "#f0f7ff",
+                          borderLeft: "4px solid #0066cc",
+                          padding: "12px 12px",
+                          borderRadius: "6px",
+                          textAlign: "center",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                        }}
+                      >
+                        <p style={{ color: "#666", fontSize: "9px", marginBottom: "4px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.3px" }}>
+                          Rows Imported
+                        </p>
+                        <h3 style={{ color: "#0066cc", fontWeight: "700", marginBottom: 0, fontSize: "22px" }}>
+                          {uploadResponse.rowsImported || 0}
+                        </h3>
+                      </div>
+                      <div 
+                        style={{
+                          backgroundColor: "#fff3cd",
+                          borderLeft: "4px solid #ffc107",
+                          padding: "12px 12px",
+                          borderRadius: "6px",
+                          textAlign: "center",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                        }}
+                      >
+                        <p style={{ color: "#666", fontSize: "9px", marginBottom: "4px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.3px" }}>
+                          Rows Skipped
+                        </p>
+                        <h3 style={{ color: "#ffc107", fontWeight: "700", marginBottom: 0, fontSize: "22px" }}>
+                          {uploadResponse.rowsSkipped || 0}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Messages Section */}
+                    {uploadResponse.messages && uploadResponse.messages.length > 0 && (
+                      <div>
+                        <h6 style={{ fontWeight: "600", marginBottom: "8px", color: "#2c3e50", fontSize: "12px" }}>
+                          <i className="icon-info mr-1" style={{ color: "#667eea", fontSize: "12px" }}></i>
+                          Import Details ({uploadResponse.messages.length} messages)
+                        </h6>
+                        <div 
+                          style={{
+                            backgroundColor: "#f8f9fa",
+                            borderRadius: "6px",
+                            maxHeight: "160px",
+                            overflowY: "auto",
+                            padding: "10px",
+                            border: "1px solid #dee2e6",
+                            fontSize: "11px",
+                          }}
+                        >
+                          <ul style={{ marginBottom: 0, paddingLeft: "18px" }}>
+                            {uploadResponse.messages.slice(0, 6).map((msg, idx) => (
+                              <li key={idx} style={{ marginBottom: "4px", color: "#555", lineHeight: "1.3" }}>
+                                {msg}
+                              </li>
+                            ))}
+                            {uploadResponse.messages.length > 6 && (
+                              <li style={{ marginTop: "6px", color: "#0066cc", fontWeight: "600", fontSize: "10px" }}>
+                                ... +{uploadResponse.messages.length - 6} more
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div 
+                className="modal-footer" 
+                style={{
+                  padding: "12px 16px",
+                  borderTop: "1px solid #e9ecef",
+                  backgroundColor: "#f8f9fa",
+                  borderBottomLeftRadius: "12px",
+                  borderBottomRightRadius: "12px",
+                  display: "flex",
+                  gap: "8px",
+                  justifyContent: "flex-end",
+                }}
+              >
+                {!uploadResponse ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={handleCloseUploadModal}
+                      disabled={uploading}
+                      style={{
+                        borderRadius: "4px",
+                        padding: "6px 16px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        backgroundColor: "white",
+                        color: "#666",
+                        border: "1px solid #ddd",
+                        cursor: uploading ? "not-allowed" : "pointer",
+                        transition: "all 0.2s ease",
+                        opacity: uploading ? 0.6 : 1,
+                      }}
+                      onMouseEnter={(e) => !uploading && (e.currentTarget.style.backgroundColor = "#f0f0f0")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="upload-btn"
+                      onClick={handleFileUpload}
+                      disabled={uploading || !uploadFile}
+                      style={{
+                        borderRadius: "4px",
+                        padding: "6px 18px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        background: uploading || !uploadFile ? "#ccc" : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        color: "white",
+                        border: "none",
+                        cursor: uploading || !uploadFile ? "not-allowed" : "pointer",
+                        transition: "all 0.2s ease",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        opacity: uploading || !uploadFile ? 0.7 : 1,
+                      }}
+                    >
+                      {uploading ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            role="status"
+                            aria-hidden="true"
+                            style={{ width: "12px", height: "12px" }}
+                          ></span>
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="icon-upload" style={{ fontSize: "13px" }}></i>
+                          <span>Upload</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={handleCloseUploadModal}
+                    style={{
+                      borderRadius: "4px",
+                      padding: "6px 18px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      width: "auto",
+                      background: "linear-gradient(135deg, #28a745 0%, #20c997 100%)",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
                     }}
-                    disabled={uploading}
-                  />
-                  <small className="text-muted">
-                    Supported formats: .xlsx, .xls, .csv
-                  </small>
-                </div>
-
-                {uploadFile && (
-                  <div className="alert alert-info mt-3">
-                    <strong>Selected File:</strong> {uploadFile.name}
-                    <br />
-                    <strong>Size:</strong> {(uploadFile.size / 1024).toFixed(2)} KB
-                  </div>
-                )}
-
-                {uploadMessage.text && (
-                  <div
-                    className={`alert alert-${uploadMessage.type === "success" ? "success" : "danger"} mt-3`}
-                    role="alert"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 4px 10px rgba(40, 167, 69, 0.25)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
                   >
-                    {uploadMessage.text}
-                  </div>
+                    <i className="icon-check-circle" style={{ fontSize: "13px" }}></i>
+                    <span>Done</span>
+                  </button>
                 )}
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowUploadModal(false)}
-                  disabled={uploading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-success"
-                  onClick={handleFileUpload}
-                  disabled={uploading || !uploadFile}
-                  style={{ cursor: uploading || !uploadFile ? "not-allowed" : "pointer" }}
-                >
-                  {uploading ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm mr-2"
-                        role="status"
-                        aria-hidden="true"
-                      ></span>
-                      Uploading...
-                    </>
-                  ) : (
-                    "Upload"
-                  )}
-                </button>
               </div>
             </div>
           </div>

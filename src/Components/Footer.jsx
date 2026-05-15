@@ -13,7 +13,7 @@ export default function Footer() {
                   <a href="https://www.piramalswasthya.org/" target="_blank">
                     Piramalswasthya
                   </a>
-                </span> <div className="d-sm-flex justify-content-center justify-content-sm-between"><span className="text-muted">last update on </span>&nbsp;14-May-2026</div>
+                </span> <div className="d-sm-flex justify-content-center justify-content-sm-between"><span className="text-muted">last update on </span>&nbsp;15-May-2026</div>
               </div>
              
             </footer>
