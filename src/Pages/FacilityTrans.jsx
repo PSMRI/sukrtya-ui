@@ -71,6 +71,18 @@ export default function FacilityTrans() {
 
     fetchMasterContext();
   }, [navigate]);
+
+  const handleSelectAsha = (staff) => {
+    navigate("/entry-form", {
+      state: {
+        assignmentId: staff.assignmentId,
+        staff,
+        facility: masterContext?.facilities?.[0]?.facility || null,
+        masterContext,
+      },
+    });
+  };
+
   return (
     <Base title="Staff Directory">
       <div className="container-fluid page-body-wrapper">
@@ -130,6 +142,7 @@ export default function FacilityTrans() {
                                 <th>Name</th>
                                 <th>Mobile</th>
                                 <th>Status</th>
+                                <th>Action</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -157,6 +170,16 @@ export default function FacilityTrans() {
                                     >
                                       {staff.status}
                                     </span>
+                                  </td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-outline-primary"
+                                      title={staff.assignmentId || "N/A"}
+                                      onClick={() => handleSelectAsha(staff)}
+                                    >
+                                      Select
+                                    </button>
                                   </td>
                                 </tr>
                               ))}
