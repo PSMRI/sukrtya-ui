@@ -1,13 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Base from "../Components/Base";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const cardStyle = {
   border: "none",
-  borderRadius: "18px",
-  boxShadow: "0 18px 45px rgba(15, 23, 42, 0.12)",
+  borderRadius: "24px",
+  boxShadow: "0 22px 50px rgba(15, 23, 42, 0.12)",
   overflow: "hidden",
+  background: "#fff",
 };
 
 const headerStyle = {
@@ -15,6 +16,74 @@ const headerStyle = {
     "linear-gradient(135deg, rgba(14, 165, 233, 0.96), rgba(59, 130, 246, 0.96))",
   color: "#fff",
   borderBottom: "none",
+};
+
+const pageBackdropStyle = {
+  minHeight: "100vh",
+  background:
+    "radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 30%), radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 26%), linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%)",
+};
+
+const pageFrameStyle = {
+  maxWidth: "1480px",
+  margin: "0 auto",
+  paddingBottom: "24px",
+};
+
+const heroStyle = {
+  borderRadius: "26px",
+  padding: "28px 28px 26px",
+  background:
+    "linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,64,175,0.94) 55%, rgba(37,99,235,0.92))",
+  color: "#fff",
+  boxShadow: "0 24px 60px rgba(15, 23, 42, 0.18)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const heroMetaPillStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: "8px 14px",
+  borderRadius: "999px",
+  background: "rgba(255,255,255,0.08)",
+  border: "1px solid rgba(255,255,255,0.14)",
+  color: "rgba(255,255,255,0.92)",
+  fontSize: "12px",
+  fontWeight: 700,
+  letterSpacing: "0.03em",
+};
+
+const metricCardStyle = {
+  borderRadius: "20px",
+  padding: "16px 18px",
+  background: "rgba(255,255,255,0.86)",
+  backdropFilter: "blur(12px)",
+  border: "1px solid rgba(148,163,184,0.16)",
+  boxShadow: "0 14px 30px rgba(15, 23, 42, 0.08)",
+};
+
+const metricLabelStyle = {
+  fontSize: "12px",
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "#64748b",
+  fontWeight: 700,
+};
+
+const metricValueStyle = {
+  fontSize: "26px",
+  lineHeight: 1.1,
+  color: "#0f172a",
+  fontWeight: 800,
+};
+
+const sectionCardStyle = {
+  borderRadius: "24px",
+  background: "rgba(255,255,255,0.82)",
+  border: "1px solid rgba(148,163,184,0.16)",
+  boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
+  backdropFilter: "blur(12px)",
 };
 
 const statusPalette = {
@@ -27,18 +96,18 @@ const statusPalette = {
 
 const emptyStyle = {
   minHeight: "320px",
-  borderRadius: "22px",
+  borderRadius: "24px",
   background:
-    "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(239,246,255,0.95))",
-  border: "1px dashed rgba(37, 99, 235, 0.35)",
+    "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(239,246,255,0.95))",
+  border: "1px dashed rgba(37, 99, 235, 0.28)",
   boxShadow: "0 20px 55px rgba(37, 99, 235, 0.08)",
 };
 
 const formShellStyle = {
-  borderRadius: "22px",
+  borderRadius: "24px",
   background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
-  boxShadow: "0 18px 45px rgba(15, 23, 42, 0.12)",
-  border: "1px solid rgba(37, 99, 235, 0.12)",
+  boxShadow: "0 18px 45px rgba(15, 23, 42, 0.10)",
+  border: "1px solid rgba(37, 99, 235, 0.10)",
 };
 
 const formatDate = (value) => {
@@ -68,6 +137,42 @@ const formatDateForInput = (value) => {
   return date.toISOString().slice(0, 10);
 };
 
+const formatDateForPayload = (value, formCode, isUpdateMode) => {
+  if (!value) return "";
+
+  if (formCode === "BASIC") {
+    if (isUpdateMode) {
+      if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value;
+      }
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toISOString().slice(0, 10);
+    }
+
+    if (typeof value === "string" && /^\d{2}-\d{2}-\d{4}$/.test(value)) {
+      return value;
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toISOString().slice(0, 10);
+};
+
 const getStatusStyle = (status) =>
   statusPalette[status] || {
     background: "#e5e7eb",
@@ -82,9 +187,110 @@ const computeEdd = (lmpValue) => {
   return date.toISOString().slice(0, 10);
 };
 
+const addDaysToDate = (value, offsetDays) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  date.setDate(date.getDate() + Number(offsetDays || 0));
+  return date.toISOString().slice(0, 10);
+};
+
+const parseValidationError = (message) => {
+  if (!message || typeof message !== "string") {
+    return { message: "Please check the highlighted fields.", fieldCode: null };
+  }
+
+  const validationMatch = message.match(/Validation failed:\s*\[(.*)\]\s*$/i);
+  if (!validationMatch) {
+    return { message, fieldCode: null };
+  }
+
+  const rawItems = validationMatch[1]
+    .split(/,\s*(?=[A-Z0-9_]+\s*\()/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const parsedItems = rawItems
+    .map((item) => {
+      const itemMatch = item.match(/^([A-Z0-9_]+)\s*\((.*?)\):\s*(.*)$/);
+      if (!itemMatch) return null;
+
+      return {
+        code: itemMatch[1],
+        label: itemMatch[2].trim(),
+        reason: itemMatch[3].trim().replace(/\.$/, ""),
+      };
+    })
+    .filter(Boolean);
+
+  if (parsedItems.length === 0) {
+    return { message: "Please check the highlighted fields.", fieldCode: null };
+  }
+
+  const labels = parsedItems.map((item) => item.label);
+  const firstLabel = labels[0];
+  const fieldCode = parsedItems[0].code;
+
+  return {
+    fieldCode,
+    message:
+      parsedItems.length === 1
+        ? `${firstLabel} is required.`
+        : `Please fill these required fields: ${labels.join(", ")}.`,
+  };
+};
+
+const resolveComputedValue = (question, values, beneficiary) => {
+  if (!question?.computed) return values[question.code] ?? "";
+
+  if (question.computed.kind === "DATE_OFFSET") {
+    const sourceQuestionCode = question.computed.sourceQuestionCode;
+    const sourceValue =
+      values[sourceQuestionCode] ??
+      (sourceQuestionCode === "BASIC_16" ? beneficiary?.lmpDate : "");
+
+    return addDaysToDate(sourceValue, question.computed.offsetDays);
+  }
+
+  return values[question.code] ?? "";
+};
+
+const buildInitialFormValues = (questions, prefill, beneficiary) => {
+  const initialValues = {};
+
+  (questions || []).forEach((question) => {
+    const currentValue =
+      prefill[question.code] ?? question.currentValue ?? question.defaultValue ?? "";
+
+    if (question.answerType === "DATE") {
+      initialValues[question.code] = formatDateForInput(currentValue);
+      return;
+    }
+
+    initialValues[question.code] = currentValue ?? "";
+  });
+
+  (questions || []).forEach((question) => {
+    if (!question?.computed) return;
+
+    const computedValue = resolveComputedValue(question, initialValues, beneficiary);
+
+    if (question.answerType === "DATE") {
+      initialValues[question.code] = formatDateForInput(computedValue);
+    } else {
+      initialValues[question.code] = computedValue;
+    }
+  });
+
+  return initialValues;
+};
+
 export default function EntryForm() {
   const navigate = useNavigate();
   const location = useLocation();
+  const toastTimerRef = useRef(null);
 
   const assignmentId =
     location.state?.assignmentId ??
@@ -103,6 +309,10 @@ export default function EntryForm() {
   const [schemaError, setSchemaError] = useState("");
   const [schema, setSchema] = useState(null);
   const [formValues, setFormValues] = useState({});
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [validationFocusCode, setValidationFocusCode] = useState(null);
+  const fieldRefs = useRef({});
 
   const facilityName = useMemo(
     () =>
@@ -127,6 +337,32 @@ export default function EntryForm() {
     );
   }, [selectedBeneficiary]);
 
+  const dashboardStats = useMemo(() => {
+    const beneficiaryCount = beneficiaries.length;
+    const formCards = beneficiaries.reduce(
+      (count, beneficiary) => count + (Array.isArray(beneficiary.formStatus) ? beneficiary.formStatus.length : 0),
+      0
+    );
+    const submittedForms = beneficiaries.reduce(
+      (count, beneficiary) =>
+        count +
+        (Array.isArray(beneficiary.formStatus)
+          ? beneficiary.formStatus.filter(
+              (form) => form.exists || form.status === "SUBMITTED"
+            ).length
+          : 0),
+      0
+    );
+
+    return {
+      beneficiaryCount,
+      formCards,
+      submittedForms,
+    };
+  }, [beneficiaries]);
+
+  const isUpdateMode = Boolean(selectedBeneficiary?.id);
+
   const resolveAddTarget = () => {
     const fallbackId = location.state?.beneficiaryId ?? null;
     if (!fallbackId) {
@@ -146,6 +382,56 @@ export default function EntryForm() {
 
   const getFormCode = (item) => item?.formCode || item?.code || "BASIC";
 
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!validationFocusCode) return;
+
+    const target = fieldRefs.current[validationFocusCode];
+    if (target?.focus) {
+      target.focus({ preventScroll: true });
+    }
+    if (target?.scrollIntoView) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    setValidationFocusCode(null);
+  }, [validationFocusCode]);
+
+  const fetchBeneficiaries = async (token) => {
+    if (!assignmentId) {
+      return;
+    }
+
+    const response = await axios.get(`/api/asha/${assignmentId}/beneficiaries`, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    setBeneficiaries(Array.isArray(response.data) ? response.data : []);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("authToken");
 
@@ -161,22 +447,12 @@ export default function EntryForm() {
       return;
     }
 
-    const fetchBeneficiaries = async () => {
+    const loadBeneficiaries = async () => {
       setListLoading(true);
       setListError("");
 
       try {
-        const response = await axios.get(
-          `/api/asha/${assignmentId}/beneficiaries`,
-          {
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setBeneficiaries(Array.isArray(response.data) ? response.data : []);
+        await fetchBeneficiaries(token);
       } catch (requestError) {
         if (requestError.response?.status === 401) {
           alert("Session expired. Please log in again.");
@@ -194,7 +470,7 @@ export default function EntryForm() {
       }
     };
 
-    fetchBeneficiaries();
+    loadBeneficiaries();
   }, [assignmentId, navigate]);
 
   const openSchemaForm = async (beneficiary, formCode = "BASIC") => {
@@ -223,20 +499,9 @@ export default function EntryForm() {
       setSelectedBeneficiary(beneficiary);
 
       const prefill = response.data?.prefill || {};
-      const initialValues = {};
-
-      (response.data?.questions || []).forEach((question) => {
-        const currentValue =
-          prefill[question.code] ?? question.currentValue ?? question.defaultValue ?? "";
-
-        if (question.answerType === "DATE") {
-          initialValues[question.code] = formatDateForInput(currentValue);
-        } else {
-          initialValues[question.code] = currentValue ?? "";
-        }
-      });
-
-      setFormValues(initialValues);
+      setFormValues(
+        buildInitialFormValues(response.data?.questions || [], prefill, beneficiary)
+      );
     } catch (requestError) {
       if (requestError.response?.status === 401) {
         alert("Session expired. Please log in again.");
@@ -265,28 +530,164 @@ export default function EntryForm() {
   const handleInputChange = (questionCode, value, question) => {
     if (question.answerType === "NUMERIC") {
       const numericOnly = value.replace(/[^0-9]/g, "");
-      setFormValues((prev) => ({
-        ...prev,
-        [questionCode]: numericOnly,
-      }));
+      setFormValues((prev) => {
+        const nextValues = {
+          ...prev,
+          [questionCode]: numericOnly,
+        };
+
+        (schema?.questions || []).forEach((schemaQuestion) => {
+          if (
+            schemaQuestion?.computed?.kind === "DATE_OFFSET" &&
+            schemaQuestion.computed.sourceQuestionCode === questionCode
+          ) {
+            const computedValue = resolveComputedValue(
+              schemaQuestion,
+              nextValues,
+              selectedBeneficiary
+            );
+
+            nextValues[schemaQuestion.code] = formatDateForInput(computedValue);
+          }
+        });
+
+        return nextValues;
+      });
       return;
     }
 
-    setFormValues((prev) => ({
-      ...prev,
-      [questionCode]: value,
-    }));
-
-    if (question.computed?.kind === "DATE_OFFSET" && question.code === "BASIC_16") {
-      setFormValues((prev) => ({
+    setFormValues((prev) => {
+      const nextValues = {
         ...prev,
-        BASIC_17: computeEdd(value),
-      }));
-    }
+        [questionCode]: value,
+      };
+
+      (schema?.questions || []).forEach((schemaQuestion) => {
+        if (
+          schemaQuestion?.computed?.kind === "DATE_OFFSET" &&
+          schemaQuestion.computed.sourceQuestionCode === questionCode
+        ) {
+          const computedValue = resolveComputedValue(
+            schemaQuestion,
+            nextValues,
+            selectedBeneficiary
+          );
+
+          nextValues[schemaQuestion.code] = formatDateForInput(computedValue);
+        }
+      });
+
+      return nextValues;
+    });
   };
 
   const handleAddBeneficiary = () => {
     openSchemaForm(resolveAddTarget(), "BASIC");
+  };
+
+  const handleSaveForm = async () => {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      alert("Session expired. Please log in again.");
+      navigate("/login");
+      return;
+    }
+
+    if (!schema) {
+      return;
+    }
+
+    const isUpdateMode = Boolean(selectedBeneficiary?.id);
+
+    if (selectedFormCode === "BASIC" && !assignmentId && !isUpdateMode) {
+      alert("No ASHA assignment selected.");
+      return;
+    }
+
+    if (!isUpdateMode && selectedFormCode !== "BASIC") {
+      alert("No beneficiary selected for this form.");
+      return;
+    }
+
+    const answers = {};
+
+    (schema.questions || []).forEach((question) => {
+      const rawValue = formValues[question.code] ?? "";
+
+      if (question.answerType === "DATE") {
+        answers[question.code] = formatDateForPayload(
+          rawValue,
+          selectedFormCode,
+          isUpdateMode
+        );
+        return;
+      }
+
+      if (question.answerType === "NUMERIC") {
+        answers[question.code] = rawValue === "" ? "" : Number(rawValue);
+        return;
+      }
+
+      answers[question.code] = rawValue;
+    });
+
+    setSaveLoading(true);
+
+    try {
+      const payload = {
+        answers,
+        status: "SUBMITTED",
+      };
+
+      const requestConfig = {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      if (selectedFormCode !== "BASIC") {
+        await axios.post(
+          `/api/beneficiaries/${selectedBeneficiary.id}/forms/${selectedFormCode}`,
+          payload,
+          requestConfig
+        );
+      } else if (isUpdateMode) {
+        await axios.put(`/api/beneficiaries/${selectedBeneficiary.id}`, payload, requestConfig);
+      } else if (selectedFormCode === "BASIC") {
+        await axios.post(`/api/asha/${assignmentId}/beneficiaries`, payload, requestConfig);
+      } else {
+        throw new Error("Unsupported form save flow.");
+      }
+
+      await fetchBeneficiaries(token);
+      showToast(isUpdateMode ? "Updated successfully." : "Saved successfully.", "success");
+      closeSchemaForm();
+    } catch (requestError) {
+      if (requestError.response?.status === 401) {
+        alert("Session expired. Please log in again.");
+        localStorage.clear();
+        navigate("/login");
+        return;
+      }
+
+      const friendlyError = parseValidationError(
+        requestError.response?.data?.message ||
+          requestError.response?.data?.error ||
+          requestError.message ||
+          "An error occurred while saving the form."
+      );
+
+      if (friendlyError.fieldCode) {
+        setValidationFocusCode(friendlyError.fieldCode);
+      }
+
+      showToast(friendlyError.message, "error");
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   const renderFormStatus = (beneficiary) => {
@@ -307,7 +708,7 @@ export default function EntryForm() {
             {beneficiary.formStatus.length} forms
           </small>
         </div>
-        <div className="d-flex flex-column gap-2">
+        <div className="d-flex flex-column" style={{ gap: "10px" }}>
           {beneficiary.formStatus
             .slice()
             .sort((a, b) => (a.formSequence || 0) - (b.formSequence || 0))
@@ -335,16 +736,19 @@ export default function EntryForm() {
                   }}
                   className="d-flex align-items-start justify-content-between p-3"
                   style={{
-                    borderRadius: "14px",
+                    borderRadius: "16px",
                     background: submitted
                       ? "rgba(37, 99, 235, 0.08)"
-                      : "rgba(255, 255, 255, 0.8)",
-                    border: "1px solid rgba(148, 163, 184, 0.18)",
+                      : "rgba(255, 255, 255, 0.88)",
+                    border: "1px solid rgba(148, 163, 184, 0.16)",
                     cursor: "pointer",
+                    boxShadow: "0 8px 18px rgba(15, 23, 42, 0.04)",
+                    minHeight: "104px",
+                    gap: "14px",
                   }}
                 >
-                  <div>
-                    <div className="font-weight-bold text-dark">
+                  <div style={{ paddingRight: "8px" }}>
+                    <div className="font-weight-bold text-dark" style={{ fontSize: "16px", lineHeight: 1.25 }}>
                       {form.formName}
                     </div>
                     <div className="text-muted" style={{ fontSize: "12px" }}>
@@ -356,33 +760,38 @@ export default function EntryForm() {
                       </div>
                     )}
                   </div>
-                  <div className="text-right">
-                    <span
-                      className="badge"
-                      style={{
-                        ...chipStyle,
-                        padding: "7px 12px",
-                        borderRadius: "999px",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {submitted ? form.status || "SUBMITTED" : "PENDING"}
-                    </span>
+                  <div className="text-right" style={{ minWidth: "148px" }}>
+                    <div className="d-flex align-items-center justify-content-end flex-nowrap" style={{ gap: "8px" }}>
+                      <span
+                        className="badge"
+                        style={{
+                          ...chipStyle,
+                          padding: "7px 12px",
+                          borderRadius: "999px",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {submitted ? form.status || "SUBMITTED" : "PENDING"}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openSchemaForm(beneficiary, currentFormCode);
+                        }}
+                        style={{ minWidth: "78px", padding: "6px 12px" }}
+                      >
+                        Open
+                      </button>
+                    </div>
                     <div className="text-muted mt-2" style={{ fontSize: "12px" }}>
                       {submitted
                         ? `Submitted ${formatDate(form.submittedAt)}`
                         : "Not submitted"}
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary mt-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openSchemaForm(beneficiary, currentFormCode);
-                      }}
-                    >
-                      Open
-                    </button>
                   </div>
                 </div>
               );
@@ -397,9 +806,17 @@ export default function EntryForm() {
     const ageLabel = beneficiary.age
       ? `${beneficiary.age} yrs`
       : "Age not available";
+    const singleCardLayout = beneficiaries.length === 1;
 
     return (
-      <div className="col-xl-6 col-lg-6 col-md-12 mb-4" key={beneficiary.id}>
+      <div
+        className={
+          singleCardLayout
+            ? "col-12 col-lg-10 col-xl-8 offset-lg-1 offset-xl-2 mb-4"
+            : "col-xl-6 col-lg-6 col-md-12 mb-4"
+        }
+        key={beneficiary.id}
+      >
         <div className="card h-100" style={cardStyle}>
           <div
             className="p-4"
@@ -445,7 +862,7 @@ export default function EntryForm() {
               >
                 {schemaLoading && selectedBeneficiary?.id === beneficiary.id
                   ? "Loading..."
-                  : "Add"}
+                  : "Edit Basic Info"}
               </button>
             </div>
           </div>
@@ -526,6 +943,9 @@ export default function EntryForm() {
               className="form-control"
               value={value}
               readOnly={isReadOnly}
+              ref={(node) => {
+                if (node) fieldRefs.current[question.code] = node;
+              }}
               onChange={(e) => handleInputChange(question.code, e.target.value, question)}
               placeholder={label}
             />
@@ -538,6 +958,9 @@ export default function EntryForm() {
               className="form-control"
               value={value}
               readOnly={isReadOnly}
+              ref={(node) => {
+                if (node) fieldRefs.current[question.code] = node;
+              }}
               onChange={(e) => handleInputChange(question.code, e.target.value, question)}
               placeholder={label}
             />
@@ -549,6 +972,9 @@ export default function EntryForm() {
               className="form-control"
               value={value}
               readOnly={isReadOnly}
+              ref={(node) => {
+                if (node) fieldRefs.current[question.code] = node;
+              }}
               onChange={(e) => handleInputChange(question.code, e.target.value, question)}
             />
           )}
@@ -558,6 +984,9 @@ export default function EntryForm() {
               className="form-control"
               value={value}
               disabled={isReadOnly}
+              ref={(node) => {
+                if (node) fieldRefs.current[question.code] = node;
+              }}
               onChange={(e) =>
                 handleInputChange(question.code, e.target.value, question)
               }
@@ -583,109 +1012,143 @@ export default function EntryForm() {
 
   return (
     <Base title="Beneficiaries">
-      <div className="container-fluid page-body-wrapper">
+      <div className="container-fluid page-body-wrapper" style={pageBackdropStyle}>
         <div className="main-panel">
-          <div className="content-wrapper">
-            <div
-              className="row mb-4"
-              style={{
-                borderRadius: "20px",
-                padding: "24px",
-                background:
-                  "linear-gradient(135deg, rgba(15,23,42,0.96), rgba(30,64,175,0.92))",
-                color: "#fff",
-                boxShadow: "0 18px 45px rgba(15, 23, 42, 0.18)",
-              }}
-            >
-              <div className="col-lg-8 col-md-12">
-                <div
-                  className="text-uppercase mb-2"
-                  style={{ letterSpacing: "0.08em", fontSize: "11px" }}
-                >
-                  ASHA Beneficiaries
+          <div className="content-wrapper" style={{ background: "transparent" }}>
+            <div style={pageFrameStyle}>
+              <div className="row mb-4" style={heroStyle}>
+                <div className="col-xl-8 col-lg-8 col-md-12">
+                  <div className="mb-3" style={heroMetaPillStyle}>
+                    <span style={{ width: "8px", height: "8px", borderRadius: "999px", background: "#22c55e", display: "inline-block" }} />
+                    ASHA Beneficiary Workspace
+                  </div>
+                  <h2 className="font-weight-bold mb-2" style={{ fontSize: "34px", lineHeight: 1.1 }}>
+                    {displayName}
+                  </h2>
+                  <p className="mb-0" style={{ opacity: 0.88, fontSize: "15px" }}>
+                    {facilityName} {assignmentId ? `| Assignment #${assignmentId}` : ""}
+                  </p>
                 </div>
-                <h2 className="font-weight-bold mb-2">{displayName}</h2>
-                <p className="mb-0" style={{ opacity: 0.9 }}>
-                  {facilityName} {assignmentId ? `| Assignment #${assignmentId}` : ""}
-                </p>
+                <div className="col-xl-4 col-lg-4 col-md-12 text-lg-right mt-4 mt-lg-0 d-flex justify-content-lg-end">
+                  <button
+                    type="button"
+                    className="btn btn-light btn-lg px-4"
+                    style={{ borderRadius: "14px", boxShadow: "0 12px 24px rgba(15, 23, 42, 0.12)" }}
+                    onClick={() => window.history.back()}
+                  >
+                    Back to Staff
+                  </button>
+                </div>
               </div>
-              <div className="col-lg-4 col-md-12 text-lg-right mt-3 mt-lg-0">
-                <button
-                  type="button"
-                  className="btn btn-light btn-lg px-4"
-                  onClick={() => window.history.back()}
-                >
-                  Back to Staff
-                </button>
-              </div>
-            </div>
 
-            {!selectedBeneficiary ? (
-              listLoading ? (
-                <div className="text-center py-5">
-                  <img
-                    alt="loading"
-                    src="./images/loading.gif"
-                    style={{ height: "96px" }}
-                  />
-                  <div className="mt-3 text-muted">Fetching beneficiaries...</div>
+              {!selectedBeneficiary ? (
+                <div className="row mb-4">
+                  <div className="col-lg-4 col-md-12 mb-3 mb-lg-0">
+                    <div style={metricCardStyle}>
+                      <div style={metricLabelStyle}>Beneficiaries</div>
+                      <div style={metricValueStyle}>{dashboardStats.beneficiaryCount}</div>
+                      <div className="text-muted mt-1" style={{ fontSize: "13px" }}>
+                        Active records in this assignment
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-lg-4 col-md-12 mb-3 mb-lg-0">
+                    <div style={metricCardStyle}>
+                      <div style={metricLabelStyle}>Forms</div>
+                      <div style={metricValueStyle}>{dashboardStats.formCards}</div>
+                      <div className="text-muted mt-1" style={{ fontSize: "13px" }}>
+                        Total form entries available
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-lg-4 col-md-12">
+                    <div style={metricCardStyle}>
+                      <div style={metricLabelStyle}>Submitted</div>
+                      <div style={metricValueStyle}>{dashboardStats.submittedForms}</div>
+                      <div className="text-muted mt-1" style={{ fontSize: "13px" }}>
+                        Forms already completed
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ) : listError ? (
-                <div className="alert alert-danger" role="alert">
-                  {listError}
-                </div>
-              ) : beneficiaries.length === 0 ? (
-                <div className="row justify-content-center">
-                  <div className="col-lg-8 col-md-12">
-                    <div className="card" style={emptyStyle}>
-                      <div className="card-body d-flex flex-column align-items-center justify-content-center text-center p-5">
+              ) : null}
+
+              {!selectedBeneficiary ? (
+                <div style={sectionCardStyle} className="p-4 p-lg-5">
+                  {listLoading ? (
+                    <div className="text-center py-5">
+                      <img
+                        alt="loading"
+                        src="./images/loading.gif"
+                        style={{ height: "96px" }}
+                      />
+                      <div className="mt-3 text-muted">Fetching beneficiaries...</div>
+                    </div>
+                  ) : listError ? (
+                    <div className="alert alert-danger mb-0" role="alert">
+                      {listError}
+                    </div>
+                  ) : beneficiaries.length === 0 ? (
+                    <div className="row justify-content-center">
+                      <div className="col-lg-8 col-md-12">
+                        <div className="card" style={emptyStyle}>
+                          <div className="card-body d-flex flex-column align-items-center justify-content-center text-center p-5">
+                            <div
+                              className="mb-4 d-flex align-items-center justify-content-center"
+                              style={{
+                                width: "84px",
+                                height: "84px",
+                                borderRadius: "24px",
+                                background: "rgba(37, 99, 235, 0.1)",
+                                color: "#2563eb",
+                                fontSize: "34px",
+                              }}
+                            >
+                              +
+                            </div>
+                            <h3 className="font-weight-bold mb-2">
+                              No beneficiaries found
+                            </h3>
+                            <p className="text-muted mb-4" style={{ maxWidth: "520px" }}>
+                              This ASHA assignment does not have any beneficiaries yet.
+                              Use the Add button to start creating the first record.
+                            </p>
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-lg px-5"
+                              onClick={handleAddBeneficiary}
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="d-flex align-items-center justify-content-between flex-wrap mb-4">
+                        <div>
+                          <h4 className="font-weight-bold mb-1">Beneficiary List</h4>
+                          
+                        </div>
                         <div
-                          className="mb-4 d-flex align-items-center justify-content-center"
+                          className="badge badge-light"
                           style={{
-                            width: "84px",
-                            height: "84px",
-                            borderRadius: "24px",
-                            background: "rgba(37, 99, 235, 0.1)",
-                            color: "#2563eb",
-                            fontSize: "34px",
+                            padding: "10px 14px",
+                            borderRadius: "999px",
+                            background: "rgba(37, 99, 235, 0.08)",
+                            color: "#1d4ed8",
+                            fontWeight: 700,
                           }}
                         >
-                          +
+                          {beneficiaries.length} record(s) loaded
                         </div>
-                        <h3 className="font-weight-bold mb-2">
-                          No beneficiaries found
-                        </h3>
-                        <p className="text-muted mb-4" style={{ maxWidth: "520px" }}>
-                          This ASHA assignment does not have any beneficiaries yet.
-                          Use the Add button to start creating the first record.
-                        </p>
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-lg px-5"
-                          onClick={handleAddBeneficiary}
-                        >
-                          Add
-                        </button>
                       </div>
-                    </div>
-                  </div>
+                      <div className="row">{beneficiaries.map(renderBeneficiaryCard)}</div>
+                    </>
+                  )}
                 </div>
               ) : (
-                <div className="row">
-                  <div className="col-12 mb-3">
-                    <div className="d-flex align-items-center justify-content-between flex-wrap">
-                      <div>
-                        <h4 className="font-weight-bold mb-1">Beneficiary List</h4>
-                        <p className="text-muted mb-0">
-                          {beneficiaries.length} record(s) loaded
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  {beneficiaries.map(renderBeneficiaryCard)}
-                </div>
-              )
-            ) : (
               <div style={formShellStyle} className="p-4 p-lg-5">
                 <div className="d-flex align-items-start justify-content-between flex-wrap mb-4">
                   <div>
@@ -737,8 +1200,19 @@ export default function EntryForm() {
                         <button type="button" className="btn btn-outline-secondary" onClick={closeSchemaForm}>
                           Cancel
                         </button>
-                        <button type="button" className="btn btn-primary px-4">
-                          Save Draft
+                        <button
+                          type="button"
+                          className="btn btn-primary px-4"
+                          onClick={handleSaveForm}
+                          disabled={saveLoading}
+                        >
+                          {saveLoading
+                            ? isUpdateMode
+                              ? "Updating..."
+                              : "Saving..."
+                            : isUpdateMode
+                            ? "Update"
+                            : "Save"}
                         </button>
                       </div>
                     </div>
@@ -750,9 +1224,56 @@ export default function EntryForm() {
         </div>
       </div>
 
-      <div className="floating-back-button" onClick={() => window.history.back()}>
-        ← Back
       </div>
+
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            right: "20px",
+            bottom: "20px",
+            zIndex: 1055,
+            minWidth: "280px",
+            maxWidth: "380px",
+            padding: "14px 16px 14px 18px",
+            borderRadius: "16px",
+            boxShadow: "0 18px 38px rgba(15, 23, 42, 0.2)",
+            color: toast.type === "error" ? "#7f1d1d" : "#0f172a",
+            background:
+              toast.type === "error"
+                ? "linear-gradient(135deg, #fff1f2, #fee2e2)"
+                : "linear-gradient(135deg, #eff6ff, #dbeafe)",
+            border:
+              toast.type === "error"
+                ? "1px solid rgba(248, 113, 113, 0.32)"
+                : "1px solid rgba(37, 99, 235, 0.28)",
+            borderLeft:
+              toast.type === "error"
+                ? "6px solid #ef4444"
+                : "6px solid #2563eb",
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          <div className="d-flex align-items-start justify-content-between">
+            <div style={{ fontWeight: 800, letterSpacing: "0.01em" }}>
+              {toast.type === "error" ? "Error" : "Success"}
+            </div>
+            <button
+              type="button"
+              className="btn btn-sm btn-link p-0 ml-2"
+              onClick={() => setToast(null)}
+              style={{ color: "inherit", textDecoration: "none", lineHeight: 1 }}
+            >
+              ×
+            </button>
+          </div>
+          <div className="mt-1" style={{ fontSize: "14px", opacity: 0.92 }}>
+            {toast.message}
+          </div>
+        </div>
+      )}
+
     </Base>
   );
 }
