@@ -159,34 +159,36 @@ const S = {
   metricsRow: {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "12px",
+    gap: "10px",
     marginBottom: "16px",
   },
   metricCard: {
     borderRadius: "14px",
-    padding: "14px 18px",
+    padding: "10px 12px",
     background: "#fff",
     border: "1px solid rgba(148,163,184,0.2)",
     boxShadow: "0 3px 10px rgba(15,23,42,0.06)",
   },
   metricLabel: {
-    fontSize: "10px",
+    fontSize: "9px",
     textTransform: "uppercase",
-    letterSpacing: "0.09em",
+    letterSpacing: "0.06em",
     color: "#64748b",
     fontWeight: 700,
     marginBottom: "2px",
+    wordBreak: "break-word",
   },
   metricValue: {
-    fontSize: "24px",
+    fontSize: "22px",
     fontWeight: 800,
     color: "#0f172a",
     lineHeight: 1,
   },
   metricSub: {
-    fontSize: "11px",
+    fontSize: "10px",
     color: "#94a3b8",
     marginTop: "3px",
+    wordBreak: "break-word",
   },
   panel: {
     borderRadius: "18px",
@@ -207,12 +209,13 @@ const S = {
   benRow: {
     display: "flex",
     alignItems: "center",
-    padding: "12px 20px",
+    padding: "10px 14px",
     cursor: "pointer",
     borderBottom: "1px solid rgba(148,163,184,0.12)",
     transition: "background 0.15s",
-    gap: "14px",
+    gap: "8px",
     userSelect: "none",
+    flexWrap: "wrap",
   },
   benAvatar: {
     flexShrink: 0,
@@ -754,38 +757,41 @@ export default function EntryForm() {
           {/* Avatar */}
           <div style={S.benAvatar}>{getInitials(beneficiary.fullName)}</div>
 
-          {/* Name + code */}
+          {/* Name + code — takes remaining space */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: "14px", color: "#1e293b", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontWeight: 700, fontSize: "14px", color: "#1e293b", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {beneficiary.fullName || "Unnamed"}
             </div>
-            <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
+            <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {beneficiary.code || `#${beneficiary.id}`}
             </div>
           </div>
 
-          {/* Status badge */}
-          <span style={{ ...statusStyle, fontSize: "10px", fontWeight: 700, padding: "3px 9px", borderRadius: "999px", whiteSpace: "nowrap", flexShrink: 0 }}>
-            {beneficiary.status || "ACTIVE"}
-          </span>
+          {/* Right-side actions: wrap on mobile */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {/* Status badge */}
+            <span style={{ ...statusStyle, fontSize: "10px", fontWeight: 700, padding: "3px 8px", borderRadius: "999px", whiteSpace: "nowrap" }}>
+              {beneficiary.status || "ACTIVE"}
+            </span>
 
-          {/* Form progress */}
-          {formList.length > 0 && (
-            <ProgressPill done={submittedCount} total={formList.length} />
-          )}
+            {/* Form progress */}
+            {formList.length > 0 && (
+              <ProgressPill done={submittedCount} total={formList.length} />
+            )}
 
-          {/* Edit quick-action */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            style={{ flexShrink: 0, fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "7px", background: "rgba(37,99,235,0.08)", color: "#2563eb", border: "1px solid rgba(37,99,235,0.18)" }}
-            onClick={(e) => { e.stopPropagation(); openSchemaForm(beneficiary, "BASIC"); }}
-            disabled={schemaLoading}
-          >
-            Edit
-          </button>
+            {/* Edit quick-action */}
+            <button
+              type="button"
+              className="btn btn-sm"
+              style={{ flexShrink: 0, fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "7px", background: "rgba(37,99,235,0.08)", color: "#2563eb", border: "1px solid rgba(37,99,235,0.18)", whiteSpace: "nowrap" }}
+              onClick={(e) => { e.stopPropagation(); openSchemaForm(beneficiary, "BASIC"); }}
+              disabled={schemaLoading}
+            >
+              Edit
+            </button>
 
-          <Chevron open={isOpen} />
+            <Chevron open={isOpen} />
+          </div>
         </div>
 
         {/* ── Expanded body: Basic Info + Forms together ── */}
@@ -876,20 +882,20 @@ export default function EntryForm() {
 
               {/* ── Hero ── */}
               <div style={S.hero}>
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={S.heroPill}>
                     <span style={{ width: "7px", height: "7px", borderRadius: "999px", background: "#22c55e", display: "inline-block" }} />
                     ASHA Beneficiary Workspace
                   </div>
-                  <h2 style={{ fontWeight: 800, fontSize: "24px", margin: 0, lineHeight: 1.2 }}>{displayName}</h2>
-                  <p style={{ opacity: 0.82, fontSize: "13px", margin: "3px 0 0" }}>
+                  <h2 style={{ fontWeight: 800, fontSize: "20px", margin: 0, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</h2>
+                  <p style={{ opacity: 0.82, fontSize: "12px", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {facilityName}{assignmentId ? ` · Assignment #${assignmentId}` : ""}
                   </p>
                 </div>
                 <button
                   type="button"
                   className="btn btn-light"
-                  style={{ borderRadius: "12px", fontWeight: 700, fontSize: "13px", padding: "8px 18px" }}
+                  style={{ borderRadius: "12px", fontWeight: 700, fontSize: "13px", padding: "8px 18px", flexShrink: 0 }}
                   onClick={() => window.history.back()}
                 >
                   ← Back to Staff
@@ -917,9 +923,9 @@ export default function EntryForm() {
               {!selectedBeneficiary && (
                 <div style={S.panel}>
                   {/* Panel header */}
-                  <div style={{ ...S.panelHeader, flexWrap: "wrap", gap: "10px" }}>
-                    {/* Left: Title + count */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                  <div style={{ ...S.panelHeader, flexWrap: "wrap", gap: "8px" }}>
+                    {/* Row 1: Title + count + Add button */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
                       <span style={{ fontWeight: 800, fontSize: "15px", color: "#0f172a" }}>
                         Beneficiary List
                       </span>
@@ -932,6 +938,7 @@ export default function EntryForm() {
                             fontSize: "11px",
                             padding: "3px 10px",
                             borderRadius: "999px",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           {searchQuery
@@ -939,11 +946,22 @@ export default function EntryForm() {
                             : `${beneficiaries.length} record${beneficiaries.length !== 1 ? "s" : ""}`}
                         </span>
                       )}
+                      {/* Spacer pushes Add button to right */}
+                      <div style={{ flex: 1 }} />
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        style={{ borderRadius: "9px", fontWeight: 700, fontSize: "12px", padding: "6px 14px", flexShrink: 0, whiteSpace: "nowrap" }}
+                        onClick={handleAddBeneficiary}
+                        disabled={schemaLoading || listLoading}
+                      >
+                        + Add Beneficiary
+                      </button>
                     </div>
 
-                    {/* Center: Search box */}
+                    {/* Row 2: Search box — full width on mobile */}
                     {!listLoading && !listError && beneficiaries.length > 0 && (
-                      <div style={{ flex: 1, minWidth: "180px", maxWidth: "320px", position: "relative" }}>
+                      <div style={{ width: "100%", maxWidth: "420px", position: "relative" }}>
                         {/* Search icon */}
                         <svg
                           width="14" height="14" viewBox="0 0 16 16" fill="none"
@@ -992,17 +1010,6 @@ export default function EntryForm() {
                         )}
                       </div>
                     )}
-
-                    {/* Right: Add button */}
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm"
-                      style={{ borderRadius: "9px", fontWeight: 700, fontSize: "12px", padding: "6px 14px", flexShrink: 0 }}
-                      onClick={handleAddBeneficiary}
-                      disabled={schemaLoading || listLoading}
-                    >
-                      + Add Beneficiary
-                    </button>
                   </div>
 
                   {/* Panel body */}
@@ -1048,22 +1055,22 @@ export default function EntryForm() {
                     </div>
                   ) : (
                     <div>
-                      {/* Column headers */}
+                      {/* Column headers — hide on very small screens */}
                       <div
+                        className="d-none d-sm-flex"
                         style={{
-                          display: "flex",
                           alignItems: "center",
-                          padding: "8px 20px 8px 70px",
-                          gap: "14px",
+                          padding: "8px 14px 8px 58px",
+                          gap: "8px",
                           borderBottom: "1px solid rgba(148,163,184,0.12)",
                           background: "#f9fafb",
                         }}
                       >
                         <div style={{ flex: 1, fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em" }}>Name</div>
-                        <div style={{ width: "70px", fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em" }}>Status</div>
-                        <div style={{ width: "90px", fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em" }}>Forms</div>
-                        <div style={{ width: "80px" }} />
-                        <div style={{ width: "20px" }} />
+                        <div style={{ width: "65px", fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em" }}>Status</div>
+                        <div style={{ width: "80px", fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em" }}>Forms</div>
+                        <div style={{ width: "50px" }} />
+                        <div style={{ width: "16px" }} />
                       </div>
                       {filteredBeneficiaries.length > 0 ? (
                         filteredBeneficiaries.map((b, i) => renderBeneficiaryCard(b, i))
