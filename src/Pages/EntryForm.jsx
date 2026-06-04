@@ -50,13 +50,13 @@ const formatDateForPayload = (value, formCode, isUpdateMode) => {
 };
 
 const getStatusStyle = (status) =>
-  ({
-    ACTIVE: { background: "#16a34a", color: "#fff" },
-    INACTIVE: { background: "#6b7280", color: "#fff" },
-    PENDING: { background: "#f59e0b", color: "#111827" },
-    SUBMITTED: { background: "#2563eb", color: "#fff" },
-    COMPLETED: { background: "#0f766e", color: "#fff" },
-  }[status] || { background: "#e5e7eb", color: "#111827" });
+({
+  ACTIVE: { background: "#16a34a", color: "#fff" },
+  INACTIVE: { background: "#6b7280", color: "#fff" },
+  PENDING: { background: "#f59e0b", color: "#111827" },
+  SUBMITTED: { background: "#2563eb", color: "#fff" },
+  COMPLETED: { background: "#0f766e", color: "#fff" },
+}[status] || { background: "#e5e7eb", color: "#111827" });
 
 const addDaysToDate = (value, offsetDays) => {
   if (!value) return "";
@@ -802,12 +802,12 @@ export default function EntryForm() {
             <div style={{ ...S.infoGrid, borderBottom: formList.length > 0 ? "1px solid rgba(148,163,184,0.12)" : "none", paddingBottom: "16px" }}>
               {[
                 { label: "Husband / Father", value: beneficiary.husbandName },
-                { label: "Mobile",           value: beneficiary.mobilePhone },
-                { label: "Village",          value: beneficiary.village },
-                { label: "Age",              value: beneficiary.age ? `${beneficiary.age} yrs` : null },
-                { label: "LMP Date",         value: formatDate(beneficiary.lmpDate) },
-                { label: "EDD Date",         value: formatDate(beneficiary.eddDate) },
-                { label: "ABHA ID",          value: beneficiary.abhaId },
+                { label: "Mobile", value: beneficiary.mobilePhone },
+                { label: "Village", value: beneficiary.village },
+                { label: "Age", value: beneficiary.age ? `${beneficiary.age} yrs` : null },
+                { label: "LMP Date", value: formatDate(beneficiary.lmpDate) },
+                { label: "EDD Date", value: formatDate(beneficiary.eddDate) },
+                { label: "ABHA ID", value: beneficiary.abhaId },
               ].map(({ label, value }) => (
                 <div key={label}>
                   <div style={S.infoLabel}>{label}</div>
@@ -1135,12 +1135,7 @@ export default function EntryForm() {
                       <div className="alert alert-danger" role="alert" style={{ borderRadius: "10px" }}>{schemaError}</div>
                     ) : schema ? (
                       <>
-                        {schema.form?.description && (
-                          <div style={{ padding: "12px 16px", borderRadius: "10px", background: "rgba(37,99,235,0.05)", marginBottom: "18px", border: "1px solid rgba(37,99,235,0.1)" }}>
-                            <div style={{ fontWeight: 700, fontSize: "13px", color: "#1e40af", marginBottom: "3px" }}>{schema.form.name}</div>
-                            <p style={{ color: "#475569", fontSize: "12px", margin: 0 }}>{schema.form.description}</p>
-                          </div>
-                        )}
+
                         <div className="row">
                           {(schema.questions || [])
                             .slice()
