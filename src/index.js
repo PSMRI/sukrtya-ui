@@ -11,6 +11,7 @@ import ForgotPassword from "./Pages/ForgotPassword.jsx";
 import EntryForm from "./Pages/EntryForm";
 import ChangePassword from "./Pages/ChangePassword";
 import Profile from "./Pages/Profile";
+import GenerateForm from "./Pages/GenerateForm";
 
 // Set axios default baseURL from environment variable
 axios.defaults.baseURL =
@@ -28,7 +29,8 @@ const router = createBrowserRouter([
       { path: "facility-trans", element: <FacilityTrans /> },
       { path: "entry-form", element: <EntryForm /> },
       { path: "profile", element: <Profile /> },
-      { path: "change-password", element: <ChangePassword /> }
+      { path: "change-password", element: <ChangePassword /> },
+      { path: "generate-form", element: <GenerateForm /> }
     ]
   }
 ], {

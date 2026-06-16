@@ -498,13 +498,22 @@ export default function Dashboard() {
                   <p>{userInfo.username || ""}</p>
                 </div>
                 {userRole === "ADMIN" && (
-                  <button
-                    type="button"
-                    style={{ borderRadius: 12, fontWeight: 700, fontSize: 13, padding: "8px 18px", flexShrink: 0, background: "rgba(255,255,255,.15)", border: "1px solid rgba(255,255,255,.25)", color: "#fff", cursor: "pointer" }}
-                    onClick={() => { setShowUploadModal(true); setUploadFile(null); setUploadMessage({ type: "", text: "" }); setUploadResponse(null); }}
-                  >
-                    ↑ Import Excel
-                  </button>
+                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      style={{ borderRadius: 12, fontWeight: 700, fontSize: 13, padding: "8px 18px", flexShrink: 0, background: "rgba(255,255,255,.15)", border: "1px solid rgba(255,255,255,.25)", color: "#fff", cursor: "pointer" }}
+                      onClick={() => navigate("/generate-form")}
+                    >
+                      📄 Generate Form
+                    </button>
+                    <button
+                      type="button"
+                      style={{ borderRadius: 12, fontWeight: 700, fontSize: 13, padding: "8px 18px", flexShrink: 0, background: "rgba(255,255,255,.15)", border: "1px solid rgba(255,255,255,.25)", color: "#fff", cursor: "pointer" }}
+                      onClick={() => { setShowUploadModal(true); setUploadFile(null); setUploadMessage({ type: "", text: "" }); setUploadResponse(null); }}
+                    >
+                      ↑ Import Excel
+                    </button>
+                  </div>
                 )}
               </div>
 
