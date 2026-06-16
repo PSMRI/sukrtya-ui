@@ -377,7 +377,6 @@ function ProgressPill({ done, total }) {
 export default function EntryForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const toastTimerRef = useRef(null);
 
   const assignmentId =
     location.state?.assignmentId ?? location.state?.staff?.assignmentId ?? null;
@@ -810,58 +809,139 @@ export default function EntryForm() {
             {formList.length > 0 && (
               <div style={S.formsGrid}>
                 {formList.map((form) => {
-                  const isActive = form.active !== false;
-                  const submitted = Boolean(form.exists || form.status === "SUBMITTED");
-                  const chipStyle = getStatusStyle(submitted ? "SUBMITTED" : "PENDING");
                   const fc = getFormCode(form);
+                  const state = form.collectionState || (form.active === false ? "FORM_INACTIVE" : "NOT_STARTED");
+
+                  // Derive UI config from collectionState
+                  const stateConfig = {
+                    NOT_STARTED: {
+                      badge: { label: "Pending", bg: "#fef3c7", color: "#92400e", border: "#fcd34d" },
+                      icon: "▢",
+                      clickable: true,
+                      readonly: false,
+                      strikethrough: false,
+                      opacity: 1,
+                      subtitle: null,
+                    },
+                    DRAFT: {
+                      badge: { label: "In Progress", bg: "#eff6ff", color: "#1d4ed8", border: "#93c5fd" },
+                      icon: "✎",
+                      clickable: true,
+                      readonly: false,
+                      strikethrough: false,
+                      opacity: 1,
+                      subtitle: null,
+                    },
+                    SUBMITTED: {
+                      badge: { label: "Completed", bg: "#dcfce7", color: "#15803d", border: "#86efac" },
+                      icon: "✓",
+                      clickable: true,
+                      readonly: false,
+                      strikethrough: false,
+                      opacity: 1,
+                      subtitle: form.submittedAt ? formatDate(form.submittedAt) : null,
+                    },
+                    FORM_INACTIVE: {
+                      badge: { label: "Unavailable", bg: "#f1f5f9", color: "#94a3b8", border: "#cbd5e1" },
+                      icon: "✕",
+                      clickable: false,
+                      readonly: true,
+                      strikethrough: true,
+                      opacity: 0.5,
+                      subtitle: "Form is no longer active",
+                    },
+                    FORM_INACTIVE_HAS_DATA: {
+                      badge: { label: "Archived", bg: "#faf5ff", color: "#7c3aed", border: "#c4b5fd" },
+                      icon: "📦",
+                      clickable: true,
+                      readonly: true,
+                      strikethrough: false,
+                      opacity: 0.75,
+                      subtitle: "Read-only · Past data available",
+                    },
+                  }[state] || {
+                    badge: { label: "Pending", bg: "#fef3c7", color: "#92400e", border: "#fcd34d" },
+                    icon: "▢",
+                    clickable: true,
+                    readonly: false,
+                    strikethrough: false,
+                    opacity: 1,
+                    subtitle: null,
+                  };
+
+                  const { badge, clickable, readonly, strikethrough, opacity, subtitle } = stateConfig;
                   return (
                     <div
                       key={fc}
-                      role={isActive ? "button" : "presentation"}
-                      tabIndex={isActive ? 0 : -1}
+                      role={clickable ? "button" : "presentation"}
+                      tabIndex={clickable ? 0 : -1}
+                      title={state === "FORM_INACTIVE_HAS_DATA" ? "This form is archived. View submitted data only." : state === "FORM_INACTIVE" ? "This form is no longer available." : undefined}
                       style={{
                         ...S.formRow,
-                        opacity: isActive ? 1 : 0.55,
-                        cursor: isActive ? "pointer" : "not-allowed",
-                        background: isActive ? "#fff" : "#f8fafc"
+                        opacity,
+                        cursor: clickable ? "pointer" : "not-allowed",
+                        background: state === "FORM_INACTIVE" ? "#f8fafc" : state === "FORM_INACTIVE_HAS_DATA" ? "#fdf8ff" : "#fff",
+                        borderLeft: state === "SUBMITTED" ? "3px solid #22c55e" : state === "DRAFT" ? "3px solid #3b82f6" : state === "FORM_INACTIVE_HAS_DATA" ? "3px solid #a78bfa" : state === "FORM_INACTIVE" ? "3px solid #cbd5e1" : "3px solid transparent",
                       }}
-                      onClick={() => isActive && openSchemaForm(beneficiary, fc)}
-                      onKeyDown={(e) => { if (isActive && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openSchemaForm(beneficiary, fc); } }}
-                      onMouseEnter={(e) => { if (isActive) e.currentTarget.style.boxShadow = "0 4px 14px rgba(37,99,235,0.10)"; }}
-                      onMouseLeave={(e) => { if (isActive) e.currentTarget.style.boxShadow = "none"; }}
+                      onClick={() => clickable && openSchemaForm(beneficiary, fc)}
+                      onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openSchemaForm(beneficiary, fc); } }}
+                      onMouseEnter={(e) => { if (clickable) e.currentTarget.style.boxShadow = "0 4px 14px rgba(37,99,235,0.10)"; }}
+                      onMouseLeave={(e) => { if (clickable) e.currentTarget.style.boxShadow = "none"; }}
                     >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: "13px", color: isActive ? "#1e293b" : "#64748b", lineHeight: 1.2, textDecoration: isActive ? "none" : "line-through" }}>
-                          {form.formName}
-                        </div>
-                        <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>
-                          {fc}{form.prerequisiteCode && ` · Prereq: ${form.prerequisiteCode}`}
-                        </div>
-                        {submitted && form.submittedAt && (
-                          <div style={{ fontSize: "10px", color: "#64748b", marginTop: "2px" }}>
-                            {formatDate(form.submittedAt)}
+                      {/* Left: icon + text */}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", flex: 1, minWidth: 0 }}>
+                        <span style={{
+                          fontSize: "14px",
+                          lineHeight: 1,
+                          marginTop: "1px",
+                          flexShrink: 0,
+                          color: badge.color,
+                        }}>
+                          {stateConfig.icon}
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: "13px", color: state === "FORM_INACTIVE" ? "#94a3b8" : "#1e293b", lineHeight: 1.2, textDecoration: strikethrough ? "line-through" : "none" }}>
+                            {form.formName}
+                            {readonly && state === "FORM_INACTIVE_HAS_DATA" && (
+                              <span style={{ marginLeft: "6px", fontSize: "9px", fontWeight: 700, padding: "1px 6px", borderRadius: "4px", background: "#ede9fe", color: "#6d28d9", verticalAlign: "middle" }}>READ-ONLY</span>
+                            )}
                           </div>
-                        )}
+                          <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>
+                            {fc}{form.prerequisiteCode && ` · Prereq: ${form.prerequisiteCode}`}
+                          </div>
+                          {subtitle && (
+                            <div style={{ fontSize: "10px", color: badge.color, marginTop: "2px", fontWeight: 500 }}>
+                              {subtitle}
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Right: badge + action button */}
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                        {!isActive ? (
-                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "3px 9px", borderRadius: "999px", background: "#fee2e2", color: "#b91c1c" }}>
-                            INACTIVE
-                          </span>
-                        ) : (
-                          <>
-                            <span style={{ ...chipStyle, fontSize: "10px", fontWeight: 700, padding: "3px 9px", borderRadius: "999px" }}>
-                              {submitted ? form.status || "SUBMITTED" : "PENDING"}
-                            </span>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={(e) => { e.stopPropagation(); openSchemaForm(beneficiary, fc); }}
-                              style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "7px" }}
-                            >
-                              Open
-                            </button>
-                          </>
+                        <span style={{
+                          fontSize: "10px",
+                          fontWeight: 700,
+                          padding: "3px 9px",
+                          borderRadius: "999px",
+                          background: badge.bg,
+                          color: badge.color,
+                          border: `1px solid ${badge.border}`,
+                          whiteSpace: "nowrap",
+                        }}>
+                          {badge.label}
+                        </span>
+
+                        {/* Action button — only shown when clickable */}
+                        {clickable && (
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${state === "FORM_INACTIVE_HAS_DATA" ? "btn-outline-secondary" : "btn-outline-primary"}`}
+                            onClick={(e) => { e.stopPropagation(); openSchemaForm(beneficiary, fc); }}
+                            style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "7px", whiteSpace: "nowrap" }}
+                          >
+                            {state === "SUBMITTED" ? "View" : state === "FORM_INACTIVE_HAS_DATA" ? "View" : state === "DRAFT" ? "Resume" : "Open"}
+                          </button>
                         )}
                       </div>
                     </div>
@@ -869,6 +949,7 @@ export default function EntryForm() {
                 })}
               </div>
             )}
+
           </div>
         )}
       </div>

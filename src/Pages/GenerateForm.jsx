@@ -624,12 +624,46 @@ export default function GenerateForm() {
 
             <div className="gf-modal-body">
               {/* Important Instruction Alert */}
-              <div style={{ padding: "12px 16px", borderRadius: 8, background: "#fffbeb", borderLeft: "4px solid #f59e0b", marginBottom: 20, fontSize: 13, color: "#92400e", lineHeight: 1.5 }}>
+              <div style={{ padding: "12px 16px", borderRadius: 8, background: "#fffbeb", borderLeft: "4px solid #f59e0b", marginBottom: 16, fontSize: 13, color: "#92400e", lineHeight: 1.5 }}>
                 <strong>Important Instruction:</strong><br />
                 In your Excel sheet, please ensure you put the exact <strong>'Form Name'</strong> of a form you have already created here. Questions are mapped by this form name. If the form name doesn't match an existing form perfectly, the questions will not be mapped to it.
               </div>
 
+              {/* Template Download */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 8, background: "#f0fdf4", border: "1px solid #86efac", marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 22 }}>📥</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#15803d" }}>Download Template</div>
+                    <div style={{ fontSize: 11, color: "#166534" }}>Use this Excel template to fill in your questions correctly</div>
+                  </div>
+                </div>
+                <a
+                  href="/SukrtyaQuestion.xlsx"
+                  download="SukrtyaQuestion.xlsx"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "7px 14px",
+                    borderRadius: 8,
+                    background: "#16a34a",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    textDecoration: "none",
+                    boxShadow: "0 2px 8px rgba(22,163,74,0.25)",
+                    transition: "background 0.2s"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#15803d"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "#16a34a"; }}
+                >
+                  ↓ Download
+                </a>
+              </div>
+
               {/* Drop zone */}
+
               <div className="gf-dropzone"
                 onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.background = "#dbeafe"; e.currentTarget.style.borderColor = "#2563eb"; }}
                 onDragLeave={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.borderColor = "rgba(37,99,235,.4)"; }}
