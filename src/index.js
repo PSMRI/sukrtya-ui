@@ -12,8 +12,8 @@ import EntryForm from "./Pages/EntryForm";
 import ChangePassword from "./Pages/ChangePassword";
 import Profile from "./Pages/Profile";
 import GenerateForm from "./Pages/GenerateForm";
-
 import { ToastProvider } from './Context/ToastContext';
+import { ConfirmProvider } from './Context/ConfirmContext';
 
 // Set axios default baseURL from environment variable
 axios.defaults.baseURL =
@@ -47,9 +47,11 @@ const root = createRoot(container);
 
 root.render(
   <React.StrictMode>
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>
+    <ConfirmProvider>
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
+    </ConfirmProvider>
   </React.StrictMode>
 );
 

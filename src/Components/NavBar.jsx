@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useConfirm } from "../Context/ConfirmContext";
 
 export default function NavBar() {
   const [labels, setLabels] = useState({});
@@ -10,6 +11,7 @@ export default function NavBar() {
   const location = useLocation();
   const [data, setData] = useState([]);
   const navigate = useNavigate();
+  const { confirm } = useConfirm();
 
   // Session check interval in milliseconds (e.g., every 5 minutes)
   const SESSION_CHECK_INTERVAL = 5 * 60 * 1000;
@@ -95,11 +97,16 @@ export default function NavBar() {
     };
   }, [handleSessionExpired]);
 
-  const handleLogout = () => {
-    const confirmLogout = window.confirm(
-      labels[12] || "Are you sure you want to log out?"
-    );
-    if (confirmLogout) {
+  const handleLogout = async () => {
+    const isConfirmed = await confirm({
+      title: "Logout",
+      message: labels[12] || "Are you sure you want to log out?",
+      confirmText: "Logout",
+      cancelText: "Cancel",
+      type: "danger"
+    });
+
+    if (isConfirmed) {
       try {
         // Call logout API if available
         localStorage.clear();

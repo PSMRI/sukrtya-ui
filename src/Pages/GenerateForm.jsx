@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../Context/ToastContext";
+import { useConfirm } from "../Context/ConfirmContext";
 import Base from "../Components/Base";
 import axios from "axios";
 
@@ -214,6 +215,7 @@ export default function GenerateForm() {
   const [uploadMsg, setUploadMsg] = useState({ type: "", text: "" });
 
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -338,7 +340,13 @@ export default function GenerateForm() {
   };
 
   const handleToggleActive = async (code, currentStatus) => {
-    if (!window.confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this form?`)) return;
+    const isConfirmed = await confirm({
+      title: currentStatus ? "Deactivate Form" : "Activate Form",
+      message: `Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this form?`,
+      confirmText: currentStatus ? "Deactivate" : "Activate",
+      type: currentStatus ? "warning" : "primary"
+    });
+    if (!isConfirmed) return;
     try {
       const token = localStorage.getItem("authToken");
       const endpoint = currentStatus ? `/api/admin/forms/${code}/deactivate` : `/api/admin/forms/${code}/activate`;
@@ -354,11 +362,16 @@ export default function GenerateForm() {
   };
 
   const handleDelete = async (code, isPermanent) => {
-    const msg = isPermanent
-      ? `Are you sure you want to PERMANENTLY delete form ${code}? This action cannot be undone.`
-      : `Are you sure you want to soft delete form ${code}?`;
+    const isConfirmed = await confirm({
+      title: isPermanent ? "Permanent Delete" : "Delete Form",
+      message: isPermanent
+        ? `Are you sure you want to PERMANENTLY delete form ${code}? This action cannot be undone.`
+        : `Are you sure you want to soft delete form ${code}?`,
+      confirmText: "Delete",
+      type: "danger"
+    });
 
-    if (!window.confirm(msg)) return;
+    if (!isConfirmed) return;
 
     try {
       const token = localStorage.getItem("authToken");
