@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Base from "../Components/Base";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useToast } from "../Context/ToastContext";
 
 // ─── Utility helpers ─────────────────────────────────────────────────────────
 
@@ -397,9 +398,9 @@ export default function EntryForm() {
   const [schema, setSchema] = useState(null);
   const [formValues, setFormValues] = useState({});
   const [saveLoading, setSaveLoading] = useState(false);
-  const [toast, setToast] = useState(null);
   const [validationFocusCode, setValidationFocusCode] = useState(null);
   const fieldRefs = useRef({});
+  const { showToast } = useToast();
 
   // Collapse/expand state: ID of the currently open beneficiary accordion (only one at a time)
   const [openCardId, setOpenCardId] = useState(null);
@@ -484,17 +485,6 @@ export default function EntryForm() {
 
   // ── Toast ─────────────────────────────────────────────────────────────────
 
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-    }, 3000);
-  };
-
-  useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); }, []);
-
   useEffect(() => {
     if (!validationFocusCode) return;
     const target = fieldRefs.current[validationFocusCode];
@@ -522,7 +512,7 @@ export default function EntryForm() {
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    if (!token) { alert("Session expired. Please log in again."); navigate("/login"); return; }
+    if (!token) { showToast("Session expired. Please log in again.", "error"); navigate("/login"); return; }
     if (!assignmentId) { setListError("No ASHA assignment selected."); setListLoading(false); return; }
 
     const load = async () => {
@@ -532,7 +522,7 @@ export default function EntryForm() {
         await fetchBeneficiaries(token);
       } catch (err) {
         if (err.response?.status === 401) {
-          alert("Session expired. Please log in again.");
+          showToast("Session expired. Please log in again.", "error");
           localStorage.clear();
           navigate("/login");
           return;
@@ -547,7 +537,7 @@ export default function EntryForm() {
 
   const openSchemaForm = async (beneficiary, formCode = "BASIC") => {
     const token = localStorage.getItem("authToken");
-    if (!token) { alert("Session expired. Please log in again."); navigate("/login"); return; }
+    if (!token) { showToast("Session expired. Please log in again.", "error"); navigate("/login"); return; }
     setSchemaLoading(true);
     setSchemaError("");
     setSelectedFormCode(formCode);
@@ -599,11 +589,11 @@ export default function EntryForm() {
 
   const handleSaveForm = async () => {
     const token = localStorage.getItem("authToken");
-    if (!token) { alert("Session expired. Please log in again."); navigate("/login"); return; }
+    if (!token) { showToast("Session expired. Please log in again.", "error"); navigate("/login"); return; }
     if (!schema) return;
     const isUpdate = Boolean(selectedBeneficiary?.id);
-    if (selectedFormCode === "BASIC" && !assignmentId && !isUpdate) { alert("No ASHA assignment selected."); return; }
-    if (!isUpdate && selectedFormCode !== "BASIC") { alert("No beneficiary selected for this form."); return; }
+    if (selectedFormCode === "BASIC" && !assignmentId && !isUpdate) { showToast("No ASHA assignment selected.", "error"); return; }
+    if (!isUpdate && selectedFormCode !== "BASIC") { showToast("No beneficiary selected for this form.", "error"); return; }
 
     const answers = {};
     (schema.questions || []).forEach((q) => {
@@ -820,22 +810,28 @@ export default function EntryForm() {
             {formList.length > 0 && (
               <div style={S.formsGrid}>
                 {formList.map((form) => {
+                  const isActive = form.active !== false;
                   const submitted = Boolean(form.exists || form.status === "SUBMITTED");
                   const chipStyle = getStatusStyle(submitted ? "SUBMITTED" : "PENDING");
                   const fc = getFormCode(form);
                   return (
                     <div
                       key={fc}
-                      role="button"
-                      tabIndex={0}
-                      style={S.formRow}
-                      onClick={() => openSchemaForm(beneficiary, fc)}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSchemaForm(beneficiary, fc); } }}
-                      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 14px rgba(37,99,235,0.10)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+                      role={isActive ? "button" : "presentation"}
+                      tabIndex={isActive ? 0 : -1}
+                      style={{
+                        ...S.formRow,
+                        opacity: isActive ? 1 : 0.55,
+                        cursor: isActive ? "pointer" : "not-allowed",
+                        background: isActive ? "#fff" : "#f8fafc"
+                      }}
+                      onClick={() => isActive && openSchemaForm(beneficiary, fc)}
+                      onKeyDown={(e) => { if (isActive && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openSchemaForm(beneficiary, fc); } }}
+                      onMouseEnter={(e) => { if (isActive) e.currentTarget.style.boxShadow = "0 4px 14px rgba(37,99,235,0.10)"; }}
+                      onMouseLeave={(e) => { if (isActive) e.currentTarget.style.boxShadow = "none"; }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: "13px", color: "#1e293b", lineHeight: 1.2 }}>
+                        <div style={{ fontWeight: 600, fontSize: "13px", color: isActive ? "#1e293b" : "#64748b", lineHeight: 1.2, textDecoration: isActive ? "none" : "line-through" }}>
                           {form.formName}
                         </div>
                         <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>
@@ -848,17 +844,25 @@ export default function EntryForm() {
                         )}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                        <span style={{ ...chipStyle, fontSize: "10px", fontWeight: 700, padding: "3px 9px", borderRadius: "999px" }}>
-                          {submitted ? form.status || "SUBMITTED" : "PENDING"}
-                        </span>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={(e) => { e.stopPropagation(); openSchemaForm(beneficiary, fc); }}
-                          style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "7px" }}
-                        >
-                          Open
-                        </button>
+                        {!isActive ? (
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "3px 9px", borderRadius: "999px", background: "#fee2e2", color: "#b91c1c" }}>
+                            INACTIVE
+                          </span>
+                        ) : (
+                          <>
+                            <span style={{ ...chipStyle, fontSize: "10px", fontWeight: 700, padding: "3px 9px", borderRadius: "999px" }}>
+                              {submitted ? form.status || "SUBMITTED" : "PENDING"}
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={(e) => { e.stopPropagation(); openSchemaForm(beneficiary, fc); }}
+                              style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "7px" }}
+                            >
+                              Open
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -1183,45 +1187,6 @@ export default function EntryForm() {
         </div>
       </div>
 
-      {/* ── Toast ── */}
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            position: "fixed",
-            right: "20px",
-            bottom: "20px",
-            zIndex: 1055,
-            minWidth: "260px",
-            maxWidth: "360px",
-            padding: "12px 16px 12px 18px",
-            borderRadius: "14px",
-            boxShadow: "0 12px 32px rgba(15,23,42,0.18)",
-            color: toast.type === "error" ? "#7f1d1d" : "#0f172a",
-            background: toast.type === "error"
-              ? "linear-gradient(135deg, #fff1f2, #fee2e2)"
-              : "linear-gradient(135deg, #eff6ff, #dbeafe)",
-            border: toast.type === "error" ? "1px solid rgba(248,113,113,0.3)" : "1px solid rgba(37,99,235,0.25)",
-            borderLeft: toast.type === "error" ? "5px solid #ef4444" : "5px solid #2563eb",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontWeight: 800, fontSize: "13px" }}>
-              {toast.type === "error" ? "Error" : "Success"}
-            </span>
-            <button
-              type="button"
-              className="btn btn-sm btn-link p-0 ml-2"
-              onClick={() => setToast(null)}
-              style={{ color: "inherit", textDecoration: "none", lineHeight: 1, fontSize: "16px" }}
-            >
-              ×
-            </button>
-          </div>
-          <div style={{ marginTop: "4px", fontSize: "13px", opacity: 0.9 }}>{toast.message}</div>
-        </div>
-      )}
     </Base>
   );
 }

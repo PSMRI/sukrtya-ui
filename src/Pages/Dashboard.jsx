@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router";
 import Base from "../Components/Base";
 import axios from "axios";
+import { useToast } from "../Context/ToastContext";
 
 // ── Scoped CSS (same design language as FacilityTrans) ──────────────────────
 const css = `
@@ -304,6 +305,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const { userId, regLid, mappingUserId } = location.state || {};
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!userId || !mappingUserId) navigate("/login", { replace: true });
@@ -388,7 +390,7 @@ export default function Dashboard() {
           setDistricts(normalizedData[0].mappedFacilities.map(d => ({ code: d.districtCode, name: d.districtName })));
         }
       } catch (e) {
-        if (e.response?.status === 401) { alert("Session expired. Please log in again."); localStorage.removeItem("authToken"); navigate("/login"); }
+        if (e.response?.status === 401) { showToast("Session expired. Please log in again.", "error"); localStorage.removeItem("authToken"); navigate("/login"); }
         else setErrors({ global: e.response?.data?.message || "An unexpected error occurred. Please login again after logout." + e });
       } finally { setDistrictLoading(false); }
     };

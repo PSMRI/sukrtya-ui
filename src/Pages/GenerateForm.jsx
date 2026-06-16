@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../Context/ToastContext";
 import Base from "../Components/Base";
 import axios from "axios";
 
@@ -212,6 +213,9 @@ export default function GenerateForm() {
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState({ type: "", text: "" });
 
+  const { showToast } = useToast();
+
+  // Close menus when clicking outside
   useEffect(() => {
     const closeMenu = () => setActiveMenu(null);
     document.addEventListener("click", closeMenu);
@@ -322,10 +326,12 @@ export default function GenerateForm() {
       }
 
       setShowModal(false);
+      showToast(isEdit ? "Form updated successfully" : "Form created successfully", "success");
       fetchForms();
     } catch (err) {
       console.error("Error saving form:", err);
       setError(err.response?.data?.message || "Failed to save form.");
+      showToast(err.response?.data?.message || "Failed to save form.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -339,10 +345,11 @@ export default function GenerateForm() {
       await axios.post(endpoint, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      showToast(`Form ${currentStatus ? 'deactivated' : 'activated'} successfully`, "success");
       fetchForms();
     } catch (err) {
       console.error("Error toggling active status:", err);
-      alert("Failed to toggle status.");
+      showToast("Failed to toggle status.", "error");
     }
   };
 
@@ -359,10 +366,11 @@ export default function GenerateForm() {
       await axios.delete(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      showToast(`Form deleted successfully`, "success");
       fetchForms();
     } catch (err) {
       console.error("Error deleting form:", err);
-      alert("Failed to delete form.");
+      showToast("Failed to delete form.", "error");
     }
   };
 

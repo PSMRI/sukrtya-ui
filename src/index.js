@@ -13,6 +13,8 @@ import ChangePassword from "./Pages/ChangePassword";
 import Profile from "./Pages/Profile";
 import GenerateForm from "./Pages/GenerateForm";
 
+import { ToastProvider } from './Context/ToastContext';
+
 // Set axios default baseURL from environment variable
 axios.defaults.baseURL =
   process.env.REACT_APP_API_BASE_URL || 'https://sukrtyasiwanapi.psmri.in';
@@ -45,7 +47,9 @@ const root = createRoot(container);
 
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <ToastProvider>
+      <RouterProvider router={router} />
+    </ToastProvider>
   </React.StrictMode>
 );
 

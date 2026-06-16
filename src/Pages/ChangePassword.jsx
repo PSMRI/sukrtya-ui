@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import Base from '../Components/Base'
 import { useNavigate } from 'react-router';
 import axios from 'axios';
+import { useToast } from "../Context/ToastContext";
 
 export default function ChangePassword() {
+    const { showToast } = useToast();
     const [labels, setLabels] = useState({});
     useEffect(() => {
         const fetchLabel = async () => {
@@ -62,12 +64,12 @@ export default function ChangePassword() {
             //         },
             //     }
             // );
-            alert(response.data.message);
+            showToast(response.data.message || "Password changed successfully", "success");
             navigate("/login");
         } catch (error) {
             if (error.response && error.response.status === 401) {
                 // Token expired or unauthorized access
-                alert("Session expired. Please log in again.");
+                showToast("Session expired. Please log in again.", "error");
                 localStorage.removeItem("authToken"); // Clear the token
                 navigate("/login"); // Redirect to login page
             } else {

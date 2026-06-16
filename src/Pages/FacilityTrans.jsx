@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Base from "../Components/Base";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useToast } from "../Context/ToastContext";
 
 // ── Inline responsive styles ────────────────────────────────────────────────
 const css = `
@@ -125,11 +126,12 @@ export default function FacilityTrans() {
   const [ashaStaff, setAshaStaff] = useState([]);
   const [otherStaff, setOtherStaff] = useState([]);
   const [masterContext, setMasterContext] = useState(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (!token) {
-      alert("Session expired. Please log in again.");
+      showToast("Session expired. Please log in again.", "error");
       navigate("/login");
       return;
     }
@@ -157,7 +159,7 @@ export default function FacilityTrans() {
       } catch (error) {
         console.error("Error occurred:", error);
         if (error.response?.status === 401) {
-          alert("Session expired. Please log in again.");
+          showToast("Session expired. Please log in again.", "error");
           localStorage.removeItem("authToken");
           navigate("/login");
         } else {
